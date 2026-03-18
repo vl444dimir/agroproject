@@ -1,0 +1,33 @@
+{
+  "name": "agromonitoring",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^5.3.0",
+    "antd": "^5.15.0",
+    "axios": "^1.6.7",
+    "docx": "^9.6.1",
+    "file-saver": "^2.0.5",
+    "jspdf": "^4.2.0",
+    "jspdf-autotable": "^5.0.7",
+    "leaflet": "^1.9.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-leaflet": "^4.2.1",
+    "react-router-dom": "^6.22.3",
+    "recharts": "^2.12.2",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.64",
+    "@types/react-dom": "^18.2.21",
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.1.6"
+  }
+}
