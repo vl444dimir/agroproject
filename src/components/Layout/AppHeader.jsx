@@ -84,7 +84,6 @@ const AppHeader = () => {
     <>
       <Header className="agro-header">
         <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => navigate('/')}>
-          <div style={{ marginRight: 12, fontSize: 24 }}>🌿</div>
           <Text strong style={{ fontSize: 18, margin: 0 }}>АгроМониторинг</Text>
         </div>
 
