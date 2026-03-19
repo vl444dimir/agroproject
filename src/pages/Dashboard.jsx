@@ -34,9 +34,9 @@ const Dashboard = () => {
 
   // Mock drilldown data generated on the fly
   const drillDownData = selectedItem ? [
-    { key: '1', district: 'Акмолинский район', volume: Math.floor(selectedItem.volume * 0.4), area: 120000 },
-    { key: '2', district: 'Атбасарский район', volume: Math.floor(selectedItem.volume * 0.35), area: 95000 },
-    { key: '3', district: 'Зерендинский район', volume: Math.floor(selectedItem.volume * 0.25), area: 65000 },
+    { key: '1', district: 'Район 1', volume: Math.floor(selectedItem.volume * 0.4), area: 120000 },
+    { key: '2', district: 'Район 2', volume: Math.floor(selectedItem.volume * 0.35), area: 95000 },
+    { key: '3', district: 'Район 3', volume: Math.floor(selectedItem.volume * 0.25), area: 65000 },
   ] : [];
 
   const formationColumns = [
@@ -47,11 +47,11 @@ const Dashboard = () => {
   ];
 
   const formationData = [
-    { key: '1', plot: 'Поле 104-А', area: 1200, user: 'ТОО Агро-Север', purpose: 'Посев зерновых' },
-    { key: '2', plot: 'Поле 22-Б', area: 850, user: 'КХ Степное', purpose: 'Пастбища' },
-    { key: '3', plot: 'Участок 05', area: 2100, user: 'ТОО Целина', purpose: 'Посев масличных' },
-    { key: '4', plot: 'Поле 11-В', area: 400, user: 'ИП Иванов', purpose: 'Овощеводство' },
-    { key: '5', plot: 'Участок 88', area: 3400, user: 'АО Акмола-Астык', purpose: 'Посев зерновых' },
+    { key: '1', plot: 'Участок 1', area: 1200, user: 'Компания 7', purpose: 'Посев культуры 1' },
+    { key: '2', plot: 'Участок 2', area: 850, user: 'Компания 2', purpose: 'Пастбища' },
+    { key: '3', plot: 'Участок 3', area: 2100, user: 'Компания 3', purpose: 'Посев культуры 2' },
+    { key: '4', plot: 'Участок 4', area: 400, user: 'Пользователь 4', purpose: 'Овощеводство' },
+    { key: '5', plot: 'Участок 5', area: 3400, user: 'Компания 5', purpose: 'Посев культуры 1' },
   ];
 
   if (loading) {
@@ -125,7 +125,7 @@ const Dashboard = () => {
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-                {MOCK_MAP_DISTRICTS.filter(d => d.name.includes("Акмолинская")).map((poly, idx) => (
+                {MOCK_MAP_DISTRICTS.filter(d => d.name.includes("Регион 1")).map((poly, idx) => (
                   <Polygon key={idx} pathOptions={{ color: '#fa8c16', fillColor: '#fa8c16', fillOpacity: 0.5 }} positions={poly.coordinates}>
                     <Popup>Детализация участков</Popup>
                   </Polygon>

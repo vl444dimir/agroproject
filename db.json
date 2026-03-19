@@ -1,0 +1,664 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "login": "admin",
+      "password": "admin123",
+      "role": "admin",
+      "name": "Администратор"
+    },
+    {
+      "id": "2",
+      "login": "employee",
+      "password": "emp123",
+      "role": "employee",
+      "name": "Сотрудник 1"
+    },
+    {
+      "id": "3",
+      "login": "user",
+      "password": "user123",
+      "role": "user",
+      "name": "Пользователь 1"
+    }
+  ],
+  "kpi": {
+    "landArea": "2 400 000",
+    "harvest": "18.3",
+    "fertilizers": "45 200",
+    "subsidies": "2 100 000 000"
+  },
+  "topFertilizers": [
+    {
+      "id": "1",
+      "name": "Удобрение 1",
+      "volume": 12400
+    },
+    {
+      "id": "2",
+      "name": "Удобрение 2",
+      "volume": 9800
+    },
+    {
+      "id": "3",
+      "name": "Удобрение 3",
+      "volume": 8100
+    },
+    {
+      "id": "4",
+      "name": "Удобрение 4",
+      "volume": 7200
+    },
+    {
+      "id": "5",
+      "name": "Удобрение 5",
+      "volume": 6500
+    },
+    {
+      "id": "6",
+      "name": "Удобрение 6",
+      "volume": 5900
+    },
+    {
+      "id": "7",
+      "name": "Удобрение 7",
+      "volume": 5100
+    },
+    {
+      "id": "8",
+      "name": "Удобрение 8",
+      "volume": 4300
+    },
+    {
+      "id": "9",
+      "name": "Удобрение 9",
+      "volume": 3800
+    },
+    {
+      "id": "10",
+      "name": "Удобрение 10",
+      "volume": 3200
+    }
+  ],
+  "topPesticides": [
+    {
+      "id": "1",
+      "name": "Пестицид 1",
+      "volume": 8900
+    },
+    {
+      "id": "2",
+      "name": "Пестицид 2",
+      "volume": 7400
+    },
+    {
+      "id": "3",
+      "name": "Пестицид 3",
+      "volume": 6800
+    },
+    {
+      "id": "4",
+      "name": "Пестицид 4",
+      "volume": 5600
+    },
+    {
+      "id": "5",
+      "name": "Пестицид 5",
+      "volume": 4900
+    },
+    {
+      "id": "6",
+      "name": "Пестицид 6",
+      "volume": 4200
+    },
+    {
+      "id": "7",
+      "name": "Пестицид 7",
+      "volume": 3800
+    },
+    {
+      "id": "8",
+      "name": "Пестицид 8",
+      "volume": 3100
+    },
+    {
+      "id": "9",
+      "name": "Пестицид 9",
+      "volume": 2700
+    },
+    {
+      "id": "10",
+      "name": "Пестицид 10",
+      "volume": 2300
+    }
+  ],
+  "reports": [
+    {
+      "id": "1",
+      "district": "Регион 1",
+      "crop": "Культура 1",
+      "area": 45000,
+      "harvest": 22.1,
+      "fertilizers": 1200,
+      "pesticides": 890,
+      "year": 2024
+    },
+    {
+      "id": "2",
+      "district": "Регион 2",
+      "crop": "Культура 2",
+      "area": 38000,
+      "harvest": 19.4,
+      "fertilizers": 980,
+      "pesticides": 720,
+      "year": 2024
+    },
+    {
+      "id": "3",
+      "district": "Регион 3",
+      "crop": "Культура 1",
+      "area": 52000,
+      "harvest": 24.3,
+      "fertilizers": 1450,
+      "pesticides": 1100,
+      "year": 2024
+    },
+    {
+      "id": "4",
+      "district": "Регион 4",
+      "crop": "Культура 3",
+      "area": 28000,
+      "harvest": 16.8,
+      "fertilizers": 750,
+      "pesticides": 580,
+      "year": 2024
+    },
+    {
+      "id": "5",
+      "district": "Регион 5",
+      "crop": "Культура 4",
+      "area": 19000,
+      "harvest": 31.2,
+      "fertilizers": 620,
+      "pesticides": 430,
+      "year": 2024
+    },
+    {
+      "id": "6",
+      "district": "Регион 1",
+      "crop": "Культура 5",
+      "area": 15000,
+      "harvest": 14.5,
+      "fertilizers": 480,
+      "pesticides": 390,
+      "year": 2023
+    },
+    {
+      "id": "7",
+      "district": "Регион 2",
+      "crop": "Культура 1",
+      "area": 41000,
+      "harvest": 20.8,
+      "fertilizers": 1100,
+      "pesticides": 850,
+      "year": 2023
+    },
+    {
+      "id": "8",
+      "district": "Регион 3",
+      "crop": "Культура 2",
+      "area": 35000,
+      "harvest": 18.9,
+      "fertilizers": 920,
+      "pesticides": 680,
+      "year": 2023
+    },
+    {
+      "id": "9",
+      "district": "Регион 4",
+      "crop": "Культура 1",
+      "area": 48000,
+      "harvest": 21.5,
+      "fertilizers": 1280,
+      "pesticides": 960,
+      "year": 2022
+    },
+    {
+      "id": "10",
+      "district": "Регион 5",
+      "crop": "Культура 3",
+      "area": 22000,
+      "harvest": 15.3,
+      "fertilizers": 680,
+      "pesticides": 510,
+      "year": 2022
+    }
+  ],
+  "fertilizersRef": [
+    {
+      "id": "1",
+      "name": "Удобрение 1",
+      "composition": "Состав 1",
+      "norm": "150-200 кг/га",
+      "price": 180000,
+      "manufacturer": "Производитель 1"
+    },
+    {
+      "id": "2",
+      "name": "Удобрение 2",
+      "composition": "Состав 2",
+      "norm": "100-150 кг/га",
+      "price": 210000,
+      "manufacturer": "Производитель 2"
+    },
+    {
+      "id": "3",
+      "name": "Удобрение 3",
+      "composition": "Состав 3",
+      "norm": "200-300 кг/га",
+      "price": 145000,
+      "manufacturer": "Производитель 3"
+    },
+    {
+      "id": "4",
+      "name": "Удобрение 4",
+      "composition": "Состав 4",
+      "norm": "80-120 кг/га",
+      "price": 165000,
+      "manufacturer": "Производитель 4"
+    },
+    {
+      "id": "5",
+      "name": "Удобрение 5",
+      "composition": "Состав 5",
+      "norm": "100-150 кг/га",
+      "price": 230000,
+      "manufacturer": "Производитель 5"
+    }
+  ],
+  "pesticidesRef": [
+    {
+      "id": "1",
+      "name": "Пестицид 1",
+      "composition": "Действующее вещество 1 360 г/л",
+      "norm": "2-4 л/га",
+      "price": 3200,
+      "manufacturer": "Производитель 6"
+    },
+    {
+      "id": "2",
+      "name": "Пестицид 2",
+      "composition": "Состав 7",
+      "norm": "0.3-0.5 л/га",
+      "price": 8900,
+      "manufacturer": "Производитель 7"
+    },
+    {
+      "id": "3",
+      "name": "Пестицид 3",
+      "composition": "Состав 8",
+      "norm": "0.5-1.0 л/га",
+      "price": 4100,
+      "manufacturer": "Производитель 8"
+    },
+    {
+      "id": "4",
+      "name": "Пестицид 4",
+      "composition": "Состав 9",
+      "norm": "0.2-0.4 л/га",
+      "price": 7600,
+      "manufacturer": "Производитель 9"
+    },
+    {
+      "id": "5",
+      "name": "Пестицид 6",
+      "composition": "Состав 10",
+      "norm": "0.1-0.2 л/га",
+      "price": 12400,
+      "manufacturer": "Производитель 9"
+    }
+  ],
+  "documents": [
+    {
+      "id": "1",
+      "name": "Счёт-фактура_Компания7_2024_01.xlsx",
+      "date": "2024-01-15",
+      "status": "verified",
+      "alert": false
+    },
+    {
+      "id": "2",
+      "name": "Счёт-фактура_Компания8_2024_02.xlsx",
+      "date": "2024-02-08",
+      "status": "discrepancy",
+      "alert": true
+    },
+    {
+      "id": "3",
+      "name": "Счёт-фактура_Компания3_2024_03.xlsx",
+      "date": "2024-03-22",
+      "status": "verified",
+      "alert": false
+    },
+    {
+      "id": "4",
+      "name": "Счёт-фактура_Компания9_2024_04.xlsx",
+      "date": "2024-04-10",
+      "status": "pending",
+      "alert": false
+    }
+  ],
+  "supplyChain": [
+    {
+      "id": "1",
+      "supplier": "Компания 1",
+      "intermediary1": "Компания 2",
+      "intermediary2": "Компания 3",
+      "buyer": "Компания 4",
+      "markupTotal": 42
+    },
+    {
+      "id": "2",
+      "supplier": "Компания 5",
+      "intermediary1": "Компания 6",
+      "intermediary2": null,
+      "buyer": "Компания 7",
+      "markupTotal": 28
+    }
+  ],
+  "auditLog": [
+    {
+      "id": "1",
+      "datetime": "2024-12-01 09:14",
+      "user": "admin",
+      "role": "Администратор",
+      "action": "Вход в систему",
+      "ip": "192.168.1.10",
+      "status": "success"
+    },
+    {
+      "id": "2",
+      "datetime": "2024-12-01 09:22",
+      "user": "employee",
+      "role": "Сотрудник 1",
+      "action": "Просмотр отчёта 2024",
+      "ip": "192.168.1.14",
+      "status": "success"
+    },
+    {
+      "id": "3",
+      "datetime": "2024-12-01 10:05",
+      "user": "user",
+      "role": "Пользователь 1",
+      "action": "Расчёт калькулятора",
+      "ip": "192.168.1.21",
+      "status": "success"
+    },
+    {
+      "id": "4",
+      "datetime": "2024-12-01 11:30",
+      "user": "unknown",
+      "role": "—",
+      "action": "Попытка входа",
+      "ip": "185.220.101.5",
+      "status": "failed"
+    },
+    {
+      "id": "5",
+      "datetime": "2024-12-01 12:15",
+      "user": "admin",
+      "role": "Администратор",
+      "action": "Редактирование справочника",
+      "ip": "192.168.1.10",
+      "status": "success"
+    },
+    {
+      "id": "6",
+      "datetime": "2024-12-02 08:45",
+      "user": "employee",
+      "role": "Сотрудник 1",
+      "action": "Загрузка счёт-фактуры",
+      "ip": "192.168.1.14",
+      "status": "success"
+    },
+    {
+      "id": "7",
+      "datetime": "2024-12-02 09:30",
+      "user": "employee",
+      "role": "Сотрудник 1",
+      "action": "Генерация AI анализа",
+      "ip": "192.168.1.14",
+      "status": "success"
+    },
+    {
+      "id": "8",
+      "datetime": "2024-12-02 10:12",
+      "user": "user",
+      "role": "Пользователь 1",
+      "action": "Экспорт отчёта PDF",
+      "ip": "192.168.1.33",
+      "status": "success"
+    },
+    {
+      "id": "9",
+      "datetime": "2024-12-02 11:00",
+      "user": "admin",
+      "role": "Администратор",
+      "action": "Удаление записи справочника",
+      "ip": "192.168.1.10",
+      "status": "success"
+    },
+    {
+      "id": "10",
+      "datetime": "2024-12-02 14:22",
+      "user": "unknown",
+      "role": "—",
+      "action": "Попытка входа",
+      "ip": "91.108.4.12",
+      "status": "failed"
+    },
+    {
+      "id": "11",
+      "datetime": "2024-12-03 09:05",
+      "user": "employee",
+      "role": "Сотрудник 1",
+      "action": "Просмотр карты регионов",
+      "ip": "192.168.1.14",
+      "status": "success"
+    },
+    {
+      "id": "12",
+      "datetime": "2024-12-03 10:40",
+      "user": "user",
+      "role": "Пользователь 1",
+      "action": "Поиск альтернатив пестицидов",
+      "ip": "192.168.1.21",
+      "status": "success"
+    },
+    {
+      "id": "13",
+      "datetime": "2024-12-03 13:15",
+      "user": "admin",
+      "role": "Администратор",
+      "action": "Просмотр журнала аудита",
+      "ip": "192.168.1.10",
+      "status": "success"
+    },
+    {
+      "id": "14",
+      "datetime": "2024-12-04 08:30",
+      "user": "employee",
+      "role": "Сотрудник 1",
+      "action": "Анализ эффективности удобрений",
+      "ip": "192.168.1.14",
+      "status": "success"
+    },
+    {
+      "id": "15",
+      "datetime": "2024-12-04 15:00",
+      "user": "user",
+      "role": "Пользователь 1",
+      "action": "Выход из системы",
+      "ip": "192.168.1.21",
+      "status": "success"
+    },
+    {
+      "id": "1773821784081",
+      "datetime": "18.03.2026 13:16",
+      "user": "admin",
+      "role": "Администратор",
+      "action": "Вход в систему",
+      "ip": "127.0.0.1",
+      "status": "success"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "1",
+      "type": "warning",
+      "text": "Превышен объём поставки удобрений в регионе: Регион 1",
+      "read": false
+    },
+    {
+      "id": "2",
+      "type": "success",
+      "text": "Отчёт за 2024 год успешно сформирован",
+      "read": false
+    },
+    {
+      "id": "3",
+      "type": "error",
+      "text": "Выявлена счёт-фактура без фактической поставки: Компания 7",
+      "read": false
+    },
+    {
+      "id": "4",
+      "type": "info",
+      "text": "Обновлены нормы применения удобрений на 2025 год",
+      "read": true
+    },
+    {
+      "id": "5",
+      "type": "warning",
+      "text": "Истекает срок действия лицензии пестицида Пестицид 1",
+      "read": true
+    }
+  ],
+  "calcNorms": [
+    {
+      "id": "Культура 1",
+      "fertilizer": "Удобрение 1",
+      "fertNorm": 160,
+      "pesticide": "Пестицид 2",
+      "pestNorm": 0.4,
+      "pricePerHa": 12400
+    },
+    {
+      "id": "Культура 2",
+      "fertilizer": "Удобрение 2",
+      "fertNorm": 130,
+      "pesticide": "Пестицид 4",
+      "pestNorm": 0.3,
+      "pricePerHa": 10800
+    },
+    {
+      "id": "Культура 3",
+      "fertilizer": "Удобрение 5",
+      "fertNorm": 140,
+      "pesticide": "Пестицид 6",
+      "pestNorm": 0.15,
+      "pricePerHa": 14200
+    },
+    {
+      "id": "Культура 4",
+      "fertilizer": "Удобрение 6",
+      "fertNorm": 200,
+      "pesticide": "Пестицид 3",
+      "pestNorm": 0.7,
+      "pricePerHa": 16500
+    },
+    {
+      "id": "Культура 5",
+      "fertilizer": "Удобрение 3",
+      "fertNorm": 250,
+      "pesticide": "Пестицид 5",
+      "pestNorm": 0.25,
+      "pricePerHa": 11900
+    }
+  ],
+  "mapDistricts": [
+    {
+      "id": "1",
+      "name": "Регион 1",
+      "topCrop": "Культура 1",
+      "area": "450 000 га",
+      "coordinates": [
+        [
+          51.5,
+          68.5
+        ],
+        [
+          52.5,
+          68.5
+        ],
+        [
+          52.5,
+          71
+        ],
+        [
+          51.5,
+          71
+        ]
+      ]
+    },
+    {
+      "id": "2",
+      "name": "Регион 2",
+      "topCrop": "Культура 1",
+      "area": "520 000 га",
+      "coordinates": [
+        [
+          52,
+          62
+        ],
+        [
+          53.5,
+          62
+        ],
+        [
+          53.5,
+          65.5
+        ],
+        [
+          52,
+          65.5
+        ]
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Регион 3",
+      "topCrop": "Культура 2",
+      "area": "380 000 га",
+      "coordinates": [
+        [
+          53.5,
+          67
+        ],
+        [
+          54.8,
+          67
+        ],
+        [
+          54.8,
+          70
+        ],
+        [
+          53.5,
+          70
+        ]
+      ]
+    }
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
+}

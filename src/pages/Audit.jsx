@@ -25,27 +25,41 @@ const Audit = () => {
     );
   }
 
-  let filteredData = [...MOCK_AUDIT_LOG];
+  let filteredData = [...(MOCK_AUDIT_LOG || [])];
   
   if (filterAction) {
-    filteredData = filteredData.filter(item => item.action.includes(filterAction));
+    filteredData = filteredData.filter(item => item && item.action && item.action.includes(filterAction));
   }
+
+  const parseDateHelper = (dStr) => {
+    if (!dStr) return 0;
+    if (dStr.includes('.')) {
+      const parts = dStr.split(/[\sT\u202F\xA0]+/);
+      const dP = parts[0];
+      const tP = parts[1] || '00:00';
+      const [d, m, y] = dP.split('.');
+      const dt = new Date(`${y}-${m}-${d}T${tP}:00`);
+      return isNaN(dt.getTime()) ? 0 : dt.getTime();
+    }
+    const dt = new Date(dStr);
+    return isNaN(dt.getTime()) ? 0 : dt.getTime();
+  };
   
   if (filterDates && filterDates[0] && filterDates[1]) {
-    const start = filterDates[0].format('YYYY-MM-DD');
-    const end = filterDates[1].format('YYYY-MM-DD');
+    const startTm = filterDates[0].startOf('day').unix() * 1000;
+    const endTm = filterDates[1].endOf('day').unix() * 1000;
     filteredData = filteredData.filter(item => {
-      const datePart = item.datetime.split(' ')[0]; // 'YYYY-MM-DD'
-      // Note: the mock data actually uses YYYY-MM-DD format already from standard DatePicker comparison.
-      return datePart >= start && datePart <= end;
+      if (!item || !item.datetime) return false;
+      const t = parseDateHelper(item.datetime);
+      return t >= startTm && t <= endTm;
     });
   }
 
   // Sorting newest first
-  filteredData.sort((a,b) => new Date(b.datetime) - new Date(a.datetime));
+  filteredData.sort((a,b) => parseDateHelper(b?.datetime) - parseDateHelper(a?.datetime));
 
-  const successCount = filteredData.filter(d => d.status === 'success').length;
-  const failedCount = filteredData.filter(d => d.status === 'failed').length;
+  const successCount = filteredData.filter(d => d && d.status === 'success').length;
+  const failedCount = filteredData.filter(d => d && d.status === 'failed').length;
 
   const columns = [
     { title: 'Дата и время', dataIndex: 'datetime', key: 'datetime', width: 140 },

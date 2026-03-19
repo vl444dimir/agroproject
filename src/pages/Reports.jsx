@@ -113,8 +113,8 @@ const Reports = () => {
     setTimeout(() => {
       setAiResponse(`На основе анализа ${filteredData.length} записей:
 1. Наивысшая урожайность наблюдается в Северных регионах при использовании комплекса удобрений более 1000 т.
-2. Рекомендуется увеличить норму азотных удобрений для ячменя в Костанайской области на 15% ввиду снижения показателей в 2023 году.
-3. Ожидаемая экономия бюджета при переходе на более дешевые аналоги Каратэ составит до 1.5 млн тенге на 10 000 га.`);
+2. Рекомендуется увеличить норму азотных удобрений для культуры Культура 2 в Регионе 2 на 15% ввиду снижения показателей в 2023 году.
+3. Ожидаемая экономия бюджета при переходе на более дешевые аналоги (Пестицид 4) составит до 1.5 млн тенге на 10 000 га.`);
       setAiLoading(false);
     }, 1500);
   };
@@ -144,10 +144,10 @@ const Reports = () => {
 
   // Process data for Effectiveness Bar Chart
   const barChartData = [
-    { district: 'Акмолинская', harvest: 22.1 },
-    { district: 'Костанайская', harvest: 19.4 },
-    { district: 'Северо-Каз.', harvest: 24.3 },
-    { district: 'Павлодарская', harvest: 16.8 },
+    { district: 'Регион 1', harvest: 22.1 },
+    { district: 'Регион 2', harvest: 19.4 },
+    { district: 'Регион 3', harvest: 24.3 },
+    { district: 'Регион 4', harvest: 16.8 },
   ];
 
   return (
@@ -169,10 +169,10 @@ const Reports = () => {
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
           <Col xs={24} sm={6} md={5}>
             <Select placeholder="Регион" style={{ width: '100%' }} allowClear onChange={setFilterRegion}>
-              <Option value="Акмолинская">Акмолинская</Option>
-              <Option value="Костанайская">Костанайская</Option>
-              <Option value="Северо-Казахстанская">Северо-Казахстанская</Option>
-              <Option value="Павлодарская">Павлодарская</Option>
+              <Option value="Регион 1">Регион 1</Option>
+              <Option value="Регион 2">Регион 2</Option>
+              <Option value="Регион 3">Регион 3</Option>
+              <Option value="Регион 4">Регион 4</Option>
             </Select>
           </Col>
           <Col xs={24} sm={6} md={5}>
@@ -184,9 +184,9 @@ const Reports = () => {
           </Col>
           <Col xs={24} sm={6} md={5}>
             <Select placeholder="Культура" style={{ width: '100%' }} allowClear onChange={setFilterCrop}>
-              <Option value="Пшеница">Пшеница</Option>
-              <Option value="Ячмень">Ячмень</Option>
-              <Option value="Подсолнечник">Подсолнечник</Option>
+              <Option value="Культура 1">Культура 1</Option>
+              <Option value="Культура 2">Культура 2</Option>
+              <Option value="Культура 3">Культура 3</Option>
             </Select>
           </Col>
           <Col xs={24} sm={6} md={4}>
@@ -220,9 +220,9 @@ const Reports = () => {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Line type="monotone" dataKey="Акмолинская" stroke="#1a7c3e" strokeWidth={2} activeDot={{ r: 8 }} />
-                  <Line type="monotone" dataKey="Костанайская" stroke="#fa8c16" strokeWidth={2} />
-                  <Line type="monotone" dataKey="Северо-Казахстанская" stroke="#1890ff" strokeWidth={2} />
+                  <Line type="monotone" dataKey="Регион 1" stroke="#1a7c3e" strokeWidth={2} activeDot={{ r: 8 }} />
+                  <Line type="monotone" dataKey="Регион 2" stroke="#fa8c16" strokeWidth={2} />
+                  <Line type="monotone" dataKey="Регион 3" stroke="#1890ff" strokeWidth={2} />
                 </LineChart>
               </ResponsiveContainer>
             </div>

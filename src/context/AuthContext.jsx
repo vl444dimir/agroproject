@@ -27,26 +27,30 @@ export const AuthProvider = ({ children }) => {
           setUser(sessionUser);
           localStorage.setItem('agro_user', JSON.stringify(sessionUser));
           
-          MOCK_AUDIT_LOG.push({
-            id: Date.now(),
+          const logEntry = {
+            id: Date.now().toString(),
             datetime: new Date().toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' }).replace(',', ''),
             user: foundUser.login,
             role: foundUser.name,
             action: 'Вход в систему',
             ip,
             status: 'success'
-          });
+          };
+          MOCK_AUDIT_LOG.push(logEntry);
+          fetch('http://localhost:3001/auditLog', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(logEntry) }).catch(()=>{});
           resolve(sessionUser);
         } else {
-          MOCK_AUDIT_LOG.push({
-            id: Date.now(),
+          const failEntry = {
+            id: Date.now().toString(),
             datetime: new Date().toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' }).replace(',', ''),
             user: loginName || 'unknown',
             role: '—',
             action: 'Попытка входа',
             ip,
             status: 'failed'
-          });
+          };
+          MOCK_AUDIT_LOG.push(failEntry);
+          fetch('http://localhost:3001/auditLog', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(failEntry) }).catch(()=>{});
           reject(new Error('Неверный логин или пароль'));
         }
       }, 800); // 800ms delay as requested
@@ -55,15 +59,17 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     if (user) {
-      MOCK_AUDIT_LOG.push({
-        id: Date.now(),
+      const logEntry = {
+        id: Date.now().toString(),
         datetime: new Date().toLocaleString('ru-RU', { dateStyle: 'short', timeStyle: 'short' }).replace(',', ''),
         user: user.login,
         role: user.name,
         action: 'Выход из системы',
         ip: '127.0.0.1',
         status: 'success'
-      });
+      };
+      MOCK_AUDIT_LOG.push(logEntry);
+      fetch('http://localhost:3001/auditLog', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(logEntry) }).catch(()=>{});
     }
     setUser(null);
     localStorage.removeItem('agro_user');
