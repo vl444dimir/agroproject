@@ -1,8 +1,13 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { ConfigProvider } from 'antd'
+import ruRU from 'antd/locale/ru_RU'
+import dayjs from 'dayjs'
+import 'dayjs/locale/ru'
 import App from './App.jsx'
 import './styles/global.css'
+
+dayjs.locale('ru');
 
 // Theme config for Ant Design:
 const theme = {
@@ -24,7 +29,7 @@ const theme = {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <ConfigProvider theme={theme}>
+    <ConfigProvider theme={theme} locale={ruRU}>
       <App />
     </ConfigProvider>
   </React.StrictMode>,

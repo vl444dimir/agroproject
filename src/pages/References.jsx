@@ -1,16 +1,18 @@
 import { useState } from 'react';
-import { Typography, Tabs, Table, Button, Input, Modal, Form, Space, InputNumber } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { Typography, Tabs, Table, Button, Input, Modal, Form, Space, InputNumber, Tag, Select, List, message, Row, Alert } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined, CheckOutlined, SearchOutlined } from '@ant-design/icons';
 import { useAuth } from '../context/AuthContext';
 import { MOCK_FERTILIZERS_REF, MOCK_PESTICIDES_REF } from '../mock';
 
 const { Title, Text } = Typography;
+const { Option } = Select;
 
 const References = () => {
   const { role } = useAuth();
   
-  const [fertData, setFertData] = useState(MOCK_FERTILIZERS_REF);
-  const [pestData, setPestData] = useState(MOCK_PESTICIDES_REF);
+  // Инициализируем данные с меткой status
+  const [fertData, setFertData] = useState(MOCK_FERTILIZERS_REF.map(f => ({ ...f, status: f.status || 'active' })));
+  const [pestData, setPestData] = useState(MOCK_PESTICIDES_REF.map(p => ({ ...p, status: p.status || 'active' })));
   
   const [fertSearch, setFertSearch] = useState('');
   const [pestSearch, setPestSearch] = useState('');
@@ -19,13 +21,25 @@ const References = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [form] = Form.useForm();
 
+  // Состояния для поиска аналогов
+  const [analogModalVisible, setAnalogModalVisible] = useState(false);
+  const [analogType, setAnalogType] = useState('fert'); // 'fert' | 'pest'
+  const [selectedForAnalog, setSelectedForAnalog] = useState(null);
+  const [analogResults, setAnalogResults] = useState([]);
+
   const handleAddEdit = (values) => {
+    // Пользователи создают записи со статусом "proposed" (На модерации)
+    const newStatus = role === 'user' ? 'proposed' : 'active';
+    const newItem = { ...values, id: Date.now(), status: newStatus };
+
     if (modalType === 'fert_add') {
-      setFertData([...fertData, { ...values, id: Date.now() }]);
+      setFertData([newItem, ...fertData]);
+      if (role === 'user') message.success('Предложение отправлено на модерацию');
     } else if (modalType === 'fert_edit') {
       setFertData(fertData.map(f => f.id === editingItem.id ? { ...f, ...values } : f));
     } else if (modalType === 'pest_add') {
-      setPestData([...pestData, { ...values, id: Date.now() }]);
+      setPestData([newItem, ...pestData]);
+      if (role === 'user') message.success('Предложение отправлено на модерацию');
     } else if (modalType === 'pest_edit') {
       setPestData(pestData.map(p => p.id === editingItem.id ? { ...p, ...values } : p));
     }
@@ -40,9 +54,18 @@ const References = () => {
     else form.resetFields();
   };
 
+  const handleApprove = (type, id) => {
+    if (type === 'fert') {
+      setFertData(fertData.map(d => d.id === id ? { ...d, status: 'active' } : d));
+    } else {
+      setPestData(pestData.map(d => d.id === id ? { ...d, status: 'active' } : d));
+    }
+    message.success('Запись одобрена и добавлена в рабочий справочник');
+  };
+
   const handleDelete = (type, id) => {
     Modal.confirm({
-      title: 'Подтверждение удаления',
+      title: 'Подтверждение удаления/отклонения',
       icon: <ExclamationCircleOutlined />,
       content: (
         <div>
@@ -51,7 +74,7 @@ const References = () => {
         </div>
       ),
       okType: 'danger',
-      okText: 'Удалить',
+      okText: 'Подтвердить',
       cancelText: 'Отмена',
       onOk: () => {
         const reason = document.getElementById('deleteReason').value;
@@ -61,26 +84,59 @@ const References = () => {
         }
         if (type === 'fert') setFertData(fertData.filter(d => d.id !== id));
         if (type === 'pest') setPestData(pestData.filter(d => d.id !== id));
+        message.success('Запись успешно отклонена/удалена');
       }
     });
+  };
+
+  const findAnalogs = () => {
+    const dataList = analogType === 'fert' ? fertData : pestData;
+    const target = dataList.find(d => d.id === selectedForAnalog);
+    
+    if (!target) return;
+
+    // Алгоритм поиска дешевых аналогов (по совпадению первых слов состава и цене ниже текущей)
+    const targetBaseComp = target.composition.split(/[\s,+]+/)[0].toLowerCase();
+    
+    const analogs = dataList.filter(item => 
+      item.id !== target.id &&
+      item.status === 'active' &&
+      item.price < target.price &&
+      item.composition.toLowerCase().includes(targetBaseComp)
+    );
+
+    setAnalogResults(analogs.sort((a,b) => a.price - b.price));
   };
 
   const getColumns = (type) => {
     const cols = [
       { title: 'Название', dataIndex: 'name', key: 'name' },
       { title: 'Состав', dataIndex: 'composition', key: 'composition' },
-      { title: 'Норма применения', dataIndex: 'norm', key: 'norm' },
+      { title: 'Норма', dataIndex: 'norm', key: 'norm' },
       { title: 'Цена (₸)', dataIndex: 'price', key: 'price', render: p => p.toLocaleString('ru-RU') },
       { title: 'Производитель', dataIndex: 'manufacturer', key: 'manufacturer' },
+      {
+        title: 'Статус',
+        dataIndex: 'status',
+        key: 'status',
+        render: (status) => (
+          status === 'proposed' 
+            ? <Tag color="warning">На модерации</Tag>
+            : <Tag color="green">Активен</Tag>
+        )
+      }
     ];
 
     if (role === 'employee' || role === 'admin') {
       cols.push({
         title: 'Действия',
         key: 'actions',
-        width: 120,
+        width: 140,
         render: (_, record) => (
           <Space>
+            {record.status === 'proposed' && (
+              <Button size="small" type="primary" icon={<CheckOutlined />} onClick={() => handleApprove(type, record.id)} />
+            )}
             <Button size="small" icon={<EditOutlined />} onClick={() => openModal(`${type}_edit`, record)} />
             <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(type, record.id)} />
           </Space>
@@ -90,14 +146,22 @@ const References = () => {
     return cols;
   };
 
-  const currentTabCols = getColumns(modalType?.startsWith('fert') || !modalType ? 'fert' : 'pest');
-
   return (
     <div>
-      <Title level={2} className="agro-page-title">Справочники номенклатуры</Title>
+      <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
+        <Title level={2} className="agro-page-title" style={{ margin: 0 }}>Справочники номенклатуры</Title>
+        <Button size="large" type="default" icon={<SearchOutlined />} onClick={() => { setAnalogResults([]); setSelectedForAnalog(null); setAnalogModalVisible(true); }}>
+          Подобрать аналог
+        </Button>
+      </Row>
 
       <Tabs
         type="card"
+        onChange={(key) => {
+          setAnalogType(key === '1' ? 'fert' : 'pest');
+          setFertSearch('');
+          setPestSearch('');
+        }}
         items={[
           {
             key: '1',
@@ -111,7 +175,9 @@ const References = () => {
                     allowClear 
                     onChange={e => setFertSearch(e.target.value)} 
                   />
-                  <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal('fert_add')}>Добавить</Button>
+                  <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal('fert_add')}>
+                    {role === 'user' ? 'Предложить удобрение' : 'Добавить'}
+                  </Button>
                 </div>
                 <Table 
                   columns={getColumns('fert')} 
@@ -135,7 +201,9 @@ const References = () => {
                     allowClear 
                     onChange={e => setPestSearch(e.target.value)} 
                   />
-                  <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal('pest_add')}>Добавить</Button>
+                  <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal('pest_add')}>
+                    {role === 'user' ? 'Предложить пестицид' : 'Добавить'}
+                  </Button>
                 </div>
                 <Table 
                   columns={getColumns('pest')} 
@@ -151,7 +219,7 @@ const References = () => {
       />
 
       <Modal
-        title={modalType?.includes('add') ? 'Добавить запись' : 'Редактировать запись'}
+        title={modalType?.includes('add') ? 'Новая запись' : 'Редактировать запись'}
         open={!!modalType}
         onCancel={() => setModalType(null)}
         footer={null}
@@ -172,8 +240,73 @@ const References = () => {
           <Form.Item name="manufacturer" label="Производитель" rules={[{ required: true, message: 'Обязательно' }]}>
             <Input />
           </Form.Item>
-          <Button type="primary" htmlType="submit" block>Сохранить</Button>
+          <Button type="primary" htmlType="submit" block>
+            {role === 'user' ? 'Отправить на модерацию' : 'Сохранить'}
+          </Button>
         </Form>
+      </Modal>
+
+      <Modal
+        title="Алгоритм подбора аналогов"
+        open={analogModalVisible}
+        onCancel={() => setAnalogModalVisible(false)}
+        footer={null}
+        width={700}
+      >
+        <Typography.Paragraph type="secondary">
+          Система анализирует состав выбранного препарата и предлагает более дешевые аналоги с идентичным или схожим составом активных веществ. Начните экономить бюджет!
+        </Typography.Paragraph>
+        <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
+          <Select 
+            style={{ flex: 1 }} 
+            placeholder="Выберите препарат, который хотите заменить..."
+            onChange={setSelectedForAnalog}
+            value={selectedForAnalog}
+            showSearch
+            optionFilterProp="children"
+            size="large"
+          >
+            {(analogType === 'fert' ? fertData : pestData).filter(d => d.status === 'active').map(d => (
+              <Option key={d.id} value={d.id}>{d.name} (₸ {d.price.toLocaleString('ru-RU')} / ед.)</Option>
+            ))}
+          </Select>
+          <Button type="primary" size="large" icon={<SearchOutlined />} onClick={findAnalogs} disabled={!selectedForAnalog}>
+            Найти аналоги
+          </Button>
+        </div>
+
+        {analogResults.length > 0 ? (
+          <List
+            header={<b>Найдены выверенные выгодные аналоги ({analogResults.length}):</b>}
+            bordered
+            dataSource={analogResults}
+            renderItem={item => {
+              const originalItem = (analogType === 'fert' ? fertData : pestData).find(f => f.id === selectedForAnalog);
+              const savings = originalItem ? originalItem.price - item.price : 0;
+              return (
+                <List.Item>
+                  <div style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <Text strong style={{ fontSize: 16 }}>{item.name}</Text>
+                      <Tag color="green" style={{ fontSize: 14, padding: '2px 8px' }}>
+                        Экономия: ₸ {savings.toLocaleString('ru-RU')} с единицы
+                      </Tag>
+                    </div>
+                    <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
+                      <b>Состав:</b> {item.composition} <br />
+                      <b>Производитель:</b> {item.manufacturer}
+                    </Text>
+                    <div>
+                      <Text type="danger" strong>Ваша новая цена: ₸ {item.price.toLocaleString('ru-RU')}</Text>
+                    </div>
+                  </div>
+                </List.Item>
+              );
+            }}
+          />
+        ) : selectedForAnalog ? (
+           <Alert message="Среди активных предложений аналоги с подходящим составом и ценой ниже выбранного пока не найдены." type="warning" showIcon />
+        ) : null}
       </Modal>
     </div>
   );

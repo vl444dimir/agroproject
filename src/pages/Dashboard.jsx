@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Typography, Row, Col, Drawer, Table, Skeleton } from 'antd';
+import { Typography, Row, Col, Drawer, Table, Skeleton, Button, Spin } from 'antd';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { MapContainer, TileLayer, Polygon, Popup } from 'react-leaflet';
+import { RobotOutlined, SyncOutlined } from '@ant-design/icons';
 import { useAuth } from '../context/AuthContext';
 import { MOCK_KPI, MOCK_TOP_FERTILIZERS, MOCK_TOP_PESTICIDES, MOCK_MAP_DISTRICTS } from '../mock';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 const Dashboard = () => {
   const { role } = useAuth();
@@ -60,7 +61,9 @@ const Dashboard = () => {
 
   return (
     <div>
-      <Title level={2} className="agro-page-title">Статистика региона</Title>
+      <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
+        <Title level={2} className="agro-page-title" style={{ margin: 0 }}>Статистика региона</Title>
+      </Row>
 
       {/* KPI Cards */}
       <Row gutter={[24, 24]}>
@@ -89,6 +92,30 @@ const Dashboard = () => {
           </div>
         </Col>
       </Row>
+
+      {/* AI Recommendations */}
+      <div className="agro-card" style={{ marginTop: 24, background: '#f0fdf4', borderColor: '#bbf7d0', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', right: -20, top: -20, opacity: 0.1, pointerEvents: 'none' }}>
+           <RobotOutlined style={{ fontSize: 180, color: '#16a34a' }} />
+        </div>
+        <Title level={4} style={{ marginTop: 0, marginBottom: 16, color: '#166534', display: 'flex', alignItems: 'center' }}>
+          <RobotOutlined style={{ marginRight: 8, fontSize: 24, color: '#22c55e' }} />
+          Анализ и рекомендации модуля ИИ
+        </Title>
+        <Typography.Paragraph style={{ fontSize: 16, lineHeight: 1.6, marginBottom: 0, position: 'relative', zIndex: 1 }}>
+          <Text strong style={{ color: '#15803d' }}>Инсайт:</Text> Алгоритмы зафиксировали отклонение эффективности применения сульфата аммония на 12% ниже нормы на участках Северного региона. <br />
+          Причина: несоответствие периодов опрыскивания текущим микроклиматическим изменениям.
+          <br /><br />
+          <Text strong style={{ color: '#15803d' }}>Рекомендация:</Text> Заменить 30% объема на <Text copyable>Карбамид (Марка Б)</Text> и сдвинуть обработку на вторую декаду мая. Ожидаемое повышение урожайности составит <strong>до +4 ц/га</strong>. Экономия бюджета с учетом субсидий: <strong>~2.4 млн ₸</strong>.
+          <br />
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px dashed #bbf7d0' }}>
+             <Button type="primary" size="small" style={{ background: '#16a34a' }} icon={<SyncOutlined />}>Применить в конструктор отчетов</Button>
+             <Text type="secondary" style={{ marginLeft: 16, fontSize: 12 }}>
+                * Текст сгенерирован LLM-моделью на основе базы ЭСФ (счета-фактуры) и исторических данных.
+             </Text>
+          </div>
+        </Typography.Paragraph>
+      </div>
 
       {/* General Map */}
       <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
@@ -119,7 +146,7 @@ const Dashboard = () => {
         <Row gutter={[24, 24]}>
           <Col span={24}>
             <div className="agro-card">
-              <Title level={4} style={{ marginTop: 0, marginBottom: 16 }}>Карта с землями сельхозформирований</Title>
+              <Title level={4} style={{ marginTop: 0, marginBottom: 16 }}>Детализация участков</Title>
               <MapContainer center={[52.5, 68.5]} zoom={7} scrollWheelZoom={false} style={{ height: 300, marginBottom: 24 }}>
                 <TileLayer
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
