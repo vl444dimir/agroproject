@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      args:
+        # Указываем URL для подключения с браузера к нашему json-server сервису
+        - VITE_API_BASE_URL=http://localhost:3001
+    ports:
+      - "80:80"
+    depends_on:
+      - mock-server
+
+  mock-server:
+    image: node:18-alpine
+    working_dir: /app
+    volumes:
+      - ./db.json:/app/db.json
+    command: /bin/sh -c "npx -y json-server@0.17.4 --watch db.json --port 3001 --host 0.0.0.0"
+    ports:
+      - "3001:3001"
