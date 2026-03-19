@@ -122,7 +122,7 @@ const Dashboard = () => {
         <Col span={24}>
           <div className="agro-card">
             <Title level={4} style={{ marginTop: 0, marginBottom: 16 }}>Карта посевных площадей Казахстана</Title>
-            <MapContainer center={[48.0, 68.0]} zoom={5} scrollWheelZoom={false}>
+            <MapContainer center={[48.0, 68.0]} zoom={5} scrollWheelZoom={false} preferCanvas={true} zoomAnimation={false} fadeAnimation={false} markerZoomAnimation={false}>
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -147,7 +147,7 @@ const Dashboard = () => {
           <Col span={24}>
             <div className="agro-card">
               <Title level={4} style={{ marginTop: 0, marginBottom: 16 }}>Детализация участков</Title>
-              <MapContainer center={[52.5, 68.5]} zoom={7} scrollWheelZoom={false} style={{ height: 300, marginBottom: 24 }}>
+              <MapContainer center={[52.5, 68.5]} zoom={7} scrollWheelZoom={false} style={{ height: 300, marginBottom: 24 }} preferCanvas={true} zoomAnimation={false} fadeAnimation={false} markerZoomAnimation={false}>
                 <TileLayer
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -182,7 +182,7 @@ const Dashboard = () => {
                   <XAxis type="number" axisLine={false} tickLine={false} />
                   <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} width={80} style={{ fontSize: 11 }} />
                   <RechartsTooltip cursor={{ fill: 'rgba(26, 124, 62, 0.1)' }} />
-                  <Bar dataKey="volume" fill="#1a7c3e" radius={[0, 4, 4, 0]} onClick={handleBarClick} style={{ cursor: 'pointer' }} />
+                  <Bar dataKey="volume" fill="#1a7c3e" radius={[0, 4, 4, 0]} onClick={handleBarClick} style={{ cursor: 'pointer' }} isAnimationActive={false} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -198,7 +198,7 @@ const Dashboard = () => {
                   <XAxis type="number" axisLine={false} tickLine={false} />
                   <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} width={80} style={{ fontSize: 11 }} />
                   <RechartsTooltip cursor={{ fill: 'rgba(26, 124, 62, 0.1)' }} />
-                  <Bar dataKey="volume" fill="#1a7c3e" radius={[0, 4, 4, 0]} onClick={handleBarClick} style={{ cursor: 'pointer' }} />
+                  <Bar dataKey="volume" fill="#1a7c3e" radius={[0, 4, 4, 0]} onClick={handleBarClick} style={{ cursor: 'pointer' }} isAnimationActive={false} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

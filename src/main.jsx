@@ -29,7 +29,7 @@ const theme = {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <ConfigProvider theme={theme} locale={ruRU}>
+    <ConfigProvider theme={theme} locale={ruRU} wave={{ disabled: true }}>
       <App />
     </ConfigProvider>
   </React.StrictMode>,

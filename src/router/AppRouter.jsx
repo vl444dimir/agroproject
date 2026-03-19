@@ -1,22 +1,24 @@
+import { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { Spin } from 'antd';
 import { useAuth } from '../context/AuthContext';
 import AppLayout from '../components/Layout/AppLayout';
 
-// Pages
-import Login from '../pages/Login';
-import Dashboard from '../pages/Dashboard';
-import Reports from '../pages/Reports';
-import Calculator from '../pages/Calculator';
-import References from '../pages/References';
-import Documents from '../pages/Documents';
-import Reporting from '../pages/Reporting';
-import Audit from '../pages/Audit';
+// Динамический импорт (Code-Splitting) для критического ускорения загрузки приложения при слабом интернете
+const Login = lazy(() => import('../pages/Login'));
+const Dashboard = lazy(() => import('../pages/Dashboard'));
+const Reports = lazy(() => import('../pages/Reports'));
+const Calculator = lazy(() => import('../pages/Calculator'));
+const References = lazy(() => import('../pages/References'));
+const Documents = lazy(() => import('../pages/Documents'));
+const Reporting = lazy(() => import('../pages/Reporting'));
+const Audit = lazy(() => import('../pages/Audit'));
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { role, loading } = useAuth();
 
   if (loading) {
-    return null; // or a loading spinner
+    return <div style={{ display:'flex', height:'100vh', justifyContent:'center', alignItems:'center' }}><Spin size="large" /></div>;
   }
 
   if (!role) {
@@ -30,40 +32,47 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   return children;
 };
 
+// Заглушка, которая отображается пока качается JavaScript бандл конкретной страницы
+const PageLoader = () => (
+  <div style={{ padding: 40, textAlign: 'center' }}>
+    <Spin tip="Идет загрузка модуля..." size="large" />
+  </div>
+);
+
 const AppRouter = () => {
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <AppLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Dashboard />} />
-        <Route path="reports" element={<Reports />} />
-        <Route path="calculator" element={<Calculator />} />
-        <Route path="references" element={<References />} />
-        <Route path="documents" element={<Documents />} />
-        <Route path="reporting" element={<Reporting />} />
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route path="/login" element={<Login />} />
         
-        {/* Admin only route */}
-        <Route 
-          path="audit" 
+        <Route
+          path="/"
           element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <Audit />
+            <ProtectedRoute>
+              <AppLayout />
             </ProtectedRoute>
-          } 
-        />
-      </Route>
+          }
+        >
+          <Route index element={<Dashboard />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="calculator" element={<Calculator />} />
+          <Route path="references" element={<References />} />
+          <Route path="documents" element={<Documents />} />
+          <Route path="reporting" element={<Reporting />} />
+          
+          <Route 
+            path="audit" 
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <Audit />
+              </ProtectedRoute>
+            } 
+          />
+        </Route>
 
-      {/* Catch all */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 };
 
