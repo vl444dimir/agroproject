@@ -1,4 +1,7 @@
-import axios from 'axios';
+import { dashboardApi } from '../api/dashboard';
+import { reportsApi } from '../api/reports';
+import { referencesApi } from '../api/references';
+import { documentsApi, supplyChainApi, calculatorApi, authApi, auditApi, notificationsApi } from '../api';
 
 export let MOCK_USERS = [];
 export let MOCK_KPI = { landArea: '', harvest: '', fertilizers: '', subsidies: '' };
@@ -19,19 +22,19 @@ export const initAPI = async () => {
     const [
       users, kpi, topF, topP, reports, fertRef, pestRef, docs, sc, audit, notif, calc, mapDistricts
     ] = await Promise.all([
-      axios.get('http://localhost:3001/users').catch(() => ({data: []})),
-      axios.get('http://localhost:3001/kpi').catch(() => ({data: {}})),
-      axios.get('http://localhost:3001/topFertilizers').catch(() => ({data: []})),
-      axios.get('http://localhost:3001/topPesticides').catch(() => ({data: []})),
-      axios.get('http://localhost:3001/reports').catch(() => ({data: []})),
-      axios.get('http://localhost:3001/fertilizersRef').catch(() => ({data: []})),
-      axios.get('http://localhost:3001/pesticidesRef').catch(() => ({data: []})),
-      axios.get('http://localhost:3001/documents').catch(() => ({data: []})),
-      axios.get('http://localhost:3001/supplyChain').catch(() => ({data: []})),
-      axios.get('http://localhost:3001/auditLog').catch(() => ({data: []})),
-      axios.get('http://localhost:3001/notifications').catch(() => ({data: []})),
-      axios.get('http://localhost:3001/calcNorms').catch(() => ({data: []})),
-      axios.get('http://localhost:3001/mapDistricts').catch(() => ({data: []}))
+      authApi.getUsers(),
+      dashboardApi.getKPI(),
+      dashboardApi.getTopFertilizers(),
+      dashboardApi.getTopPesticides(),
+      reportsApi.getReports(),
+      referencesApi.getFertilizers(),
+      referencesApi.getPesticides(),
+      documentsApi.getDocuments(),
+      supplyChainApi.getSupplyChain(),
+      auditApi.getAuditLog(),
+      notificationsApi.getNotifications(),
+      calculatorApi.getCalcNorms(),
+      dashboardApi.getMapDistricts()
     ]);
 
     MOCK_USERS = users.data || [];

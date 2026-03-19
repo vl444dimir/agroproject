@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import { MOCK_USERS, MOCK_AUDIT_LOG } from '../mock';
+import { auditApi } from '../api';
 
 const AuthContext = createContext();
 
@@ -37,7 +38,7 @@ export const AuthProvider = ({ children }) => {
             status: 'success'
           };
           MOCK_AUDIT_LOG.push(logEntry);
-          fetch('http://localhost:3001/auditLog', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(logEntry) }).catch(()=>{});
+          auditApi.createAuditLog(logEntry);
           resolve(sessionUser);
         } else {
           const failEntry = {
@@ -50,7 +51,7 @@ export const AuthProvider = ({ children }) => {
             status: 'failed'
           };
           MOCK_AUDIT_LOG.push(failEntry);
-          fetch('http://localhost:3001/auditLog', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(failEntry) }).catch(()=>{});
+          auditApi.createAuditLog(failEntry);
           reject(new Error('Неверный логин или пароль'));
         }
       }, 800); // 800ms delay as requested
@@ -69,7 +70,7 @@ export const AuthProvider = ({ children }) => {
         status: 'success'
       };
       MOCK_AUDIT_LOG.push(logEntry);
-      fetch('http://localhost:3001/auditLog', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(logEntry) }).catch(()=>{});
+      auditApi.createAuditLog(logEntry);
     }
     setUser(null);
     localStorage.removeItem('agro_user');
