@@ -24,8 +24,10 @@
   ],
   "kpi": {
     "landArea": "2 400 000",
+    "sownArea": "1 850 000",
     "harvest": "18.3",
     "fertilizers": "45 200",
+    "pesticides": "21 500",
     "subsidies": "2 100 000 000"
   },
   "topFertilizers": [

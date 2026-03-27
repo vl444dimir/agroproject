@@ -4,7 +4,7 @@ import { referencesApi } from '../api/references';
 import { documentsApi, supplyChainApi, calculatorApi, authApi, auditApi, notificationsApi } from '../api';
 
 export let MOCK_USERS = [];
-export let MOCK_KPI = { landArea: '', harvest: '', fertilizers: '', subsidies: '' };
+export let MOCK_KPI = { landArea: '', sownArea: '', harvest: '', fertilizers: '', pesticides: '', subsidies: '' };
 export let MOCK_TOP_FERTILIZERS = [];
 export let MOCK_TOP_PESTICIDES = [];
 export let MOCK_REPORTS = [];
@@ -38,7 +38,7 @@ export const initAPI = async () => {
     ]);
 
     MOCK_USERS = users.data || [];
-    MOCK_KPI = kpi.data && Object.keys(kpi.data).length ? kpi.data : { landArea: '', harvest: '', fertilizers: '', subsidies: '' };
+    MOCK_KPI = kpi.data && Object.keys(kpi.data).length ? kpi.data : { landArea: '', sownArea: '', harvest: '', fertilizers: '', pesticides: '', subsidies: '' };
     MOCK_TOP_FERTILIZERS = topF.data || [];
     MOCK_TOP_PESTICIDES = topP.data || [];
     MOCK_REPORTS = reports.data || [];

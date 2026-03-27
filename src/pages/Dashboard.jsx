@@ -8,6 +8,13 @@ import { MOCK_KPI, MOCK_TOP_FERTILIZERS, MOCK_TOP_PESTICIDES, MOCK_MAP_DISTRICTS
 
 const { Title, Text } = Typography;
 
+const formatExactNumber = (val) => {
+  if (!val) return '0';
+  const num = typeof val === 'string' ? parseFloat(val.replace(/\s/g, '')) : val;
+  if (isNaN(num)) return val;
+  return num.toLocaleString('ru-RU');
+};
+
 const Dashboard = () => {
   const { role } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -66,29 +73,41 @@ const Dashboard = () => {
       </Row>
 
       {/* KPI Cards */}
-      <Row gutter={[24, 24]}>
-        <Col xs={24} sm={12} lg={6}>
-          <div className="agro-card" style={{ marginBottom: 0 }}>
-            <div className="agro-kpi-value">{MOCK_KPI.landArea} га</div>
-            <div className="agro-kpi-label">Площадь земель</div>
+      <Row gutter={[24, 24]} align="stretch">
+        <Col xs={24} sm={12} lg={8} xl={8}>
+          <div className="agro-card" style={{ marginBottom: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '16px 24px' }}>
+            <div className="agro-kpi-value" style={{ fontSize: 'clamp(24px, 2.5vw, 32px)', whiteSpace: 'nowrap' }}>{formatExactNumber(MOCK_KPI.landArea)} га</div>
+            <div className="agro-kpi-label" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 4 }}>Площадь земель</div>
           </div>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <div className="agro-card" style={{ marginBottom: 0 }}>
-            <div className="agro-kpi-value">{MOCK_KPI.harvest} ц/га</div>
-            <div className="agro-kpi-label">Урожай</div>
+        <Col xs={24} sm={12} lg={8} xl={8}>
+          <div className="agro-card" style={{ marginBottom: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '16px 24px' }}>
+            <div className="agro-kpi-value" style={{ fontSize: 'clamp(24px, 2.5vw, 32px)', whiteSpace: 'nowrap' }}>{formatExactNumber(MOCK_KPI.sownArea)} га</div>
+            <div className="agro-kpi-label" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 4 }}>Посевные площади</div>
           </div>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <div className="agro-card" style={{ marginBottom: 0 }}>
-            <div className="agro-kpi-value">{MOCK_KPI.fertilizers} т</div>
-            <div className="agro-kpi-label">Объём удобрений</div>
+        <Col xs={24} sm={12} lg={8} xl={8}>
+          <div className="agro-card" style={{ marginBottom: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '16px 24px' }}>
+            <div className="agro-kpi-value" style={{ fontSize: 'clamp(24px, 2.5vw, 32px)', whiteSpace: 'nowrap' }}>{formatExactNumber(MOCK_KPI.harvest)} ц/га</div>
+            <div className="agro-kpi-label" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 4 }}>Урожай</div>
           </div>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <div className="agro-card" style={{ marginBottom: 0 }}>
-            <div className="agro-kpi-value">₸ {MOCK_KPI.subsidies}</div>
-            <div className="agro-kpi-label">Субсидии</div>
+        <Col xs={24} sm={12} lg={8} xl={8}>
+          <div className="agro-card" style={{ marginBottom: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '16px 24px' }}>
+            <div className="agro-kpi-value" style={{ fontSize: 'clamp(24px, 2.5vw, 32px)', whiteSpace: 'nowrap' }}>{formatExactNumber(MOCK_KPI.fertilizers)} т</div>
+            <div className="agro-kpi-label" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 4 }}>Объём удобрений</div>
+          </div>
+        </Col>
+        <Col xs={24} sm={12} lg={8} xl={8}>
+          <div className="agro-card" style={{ marginBottom: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '16px 24px' }}>
+            <div className="agro-kpi-value" style={{ fontSize: 'clamp(24px, 2.5vw, 32px)', whiteSpace: 'nowrap' }}>{formatExactNumber(MOCK_KPI.pesticides)} л</div>
+            <div className="agro-kpi-label" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 4 }}>Объём пестицидов</div>
+          </div>
+        </Col>
+        <Col xs={24} sm={12} lg={8} xl={8}>
+          <div className="agro-card" style={{ marginBottom: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '16px 24px' }}>
+            <div className="agro-kpi-value" style={{ fontSize: 'clamp(24px, 2.5vw, 32px)', whiteSpace: 'nowrap' }}>₸ {formatExactNumber(MOCK_KPI.subsidies)}</div>
+            <div className="agro-kpi-label" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 4 }}>Субсидии</div>
           </div>
         </Col>
       </Row>
