@@ -1,6 +1,9 @@
-import apiClient from './client';
+import backendClient from './backendClient';
 
 export const referencesApi = {
-  getFertilizers: () => apiClient.get('/fertilizersRef').catch(() => ({ data: [] })),
-  getPesticides: () => apiClient.get('/pesticidesRef').catch(() => ({ data: [] })),
+  // На бэкенде пока все препараты лежат в /products, можно сделать фильтрацию по категории позже
+  getFertilizers: () => backendClient.get('/products').catch(() => ({ data: [] })),
+  getPesticides: () => backendClient.get('/products').catch(() => ({ data: [] })),
+  getCultures: () => backendClient.get('/cultures').catch(() => ({ data: [] })),
+  getDistricts: () => backendClient.get('/districts').catch(() => ({ data: [] })),
 };

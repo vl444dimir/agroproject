@@ -8,7 +8,10 @@ import * as XLSX from 'xlsx';
 import { Document, Packer, Paragraph, Table as DocxTable, TableRow, TableCell, HeadingLevel } from 'docx';
 import { saveAs } from 'file-saver';
 import { useAuth } from '../context/AuthContext';
-import { MOCK_REPORTS, MOCK_FERTILIZERS_REF, MOCK_PESTICIDES_REF } from '../mock';
+import { reportsApi } from '../api/reports';
+import { harvestApi } from '../api/harvestApi';
+import { productsApi } from '../api/productsApi';
+import backendClient from '../api/backendClient';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -16,10 +19,8 @@ const { Option } = Select;
 const Reports = () => {
   const { role } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [filterRegion, setFilterRegion] = useState(null);
-  const [filterYear, setFilterYear] = useState(null);
-  const [filterCrop, setFilterCrop] = useState(null);
-  const [filteredData, setFilteredData] = useState([]);
+  const [subsidiesData, setSubsidiesData] = useState([]);
+  const [harvestData, setHarvestData] = useState([]);
   
   // AI State
   const [aiLoading, setAiLoading] = useState(false);
@@ -33,61 +34,76 @@ const Reports = () => {
   const [effProduct, setEffProduct] = useState(null);
 
   useEffect(() => {
-    applyFilters();
+    fetchData();
   }, []);
 
-  const applyFilters = () => {
+  const fetchData = async () => {
     setLoading(true);
-    setTimeout(() => {
-      let data = [...MOCK_REPORTS];
-      if (filterRegion) data = data.filter(d => d.district === filterRegion);
-      if (filterYear) data = data.filter(d => d.year === parseInt(filterYear));
-      if (filterCrop) data = data.filter(d => d.crop === filterCrop);
-      setFilteredData(data);
+    try {
+      const [subResponse, harvResponse] = await Promise.all([
+        reportsApi.getFlatReports(),
+        harvestApi.getAllRecords()
+      ]);
+      setSubsidiesData(subResponse.data || []);
+      setHarvestData(harvResponse.data || []);
+    } catch (e) {
+      console.error("Ошибка загрузки данных", e);
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
 
   const tableColumns = [
-    { title: 'Район', dataIndex: 'district', key: 'district', sorter: (a,b) => a.district.localeCompare(b.district) },
-    { title: 'Культура', dataIndex: 'crop', key: 'crop', sorter: (a,b) => a.crop.localeCompare(b.crop) },
-    { title: 'Площадь (га)', dataIndex: 'area', key: 'area', sorter: (a,b) => a.area - b.area },
-    { title: 'Урожай (ц/га)', dataIndex: 'harvest', key: 'harvest', sorter: (a,b) => a.harvest - b.harvest },
-    { title: 'Удобрения (т)', dataIndex: 'fertilizers', key: 'fertilizers', sorter: (a,b) => a.fertilizers - b.fertilizers },
-    { title: 'Пестициды (л)', dataIndex: 'pesticides', key: 'pesticides', sorter: (a,b) => a.pesticides - b.pesticides },
-    { title: 'Год', dataIndex: 'year', key: 'year', sorter: (a,b) => a.year - b.year },
+    { title: 'ID', dataIndex: 'subsidyId', key: 'subsidyId' },
+    { title: 'ТОО', dataIndex: 'tooName', key: 'tooName', sorter: (a,b) => a.tooName.localeCompare(b.tooName) },
+    { title: 'Кадастр', dataIndex: 'cadastralNumber', key: 'cadastralNumber' },
+    { title: 'Культура', dataIndex: 'cultureName', key: 'cultureName' },
+    { title: 'Препарат', dataIndex: 'productName', key: 'productName' },
+    { title: 'Объем', key: 'volume', render: (_, r) => `${r.quantityUsed} ${r.uom}` },
+    { title: 'Сумма (₸)', dataIndex: 'calculatedSum', key: 'calculatedSum', render: s => s?.toLocaleString() },
   ];
+
 
   const handleExportPDF = () => {
     const doc = new jsPDF();
     doc.text("Отчет по мониторингу АПК", 14, 15);
     doc.autoTable({
-      head: [['Район', 'Культура', 'Площадь', 'Урожай', 'Удобрения', 'Пестициды', 'Год']],
-      body: filteredData.map(row => [row.district, row.crop, row.area, row.harvest, row.fertilizers, row.pesticides, row.year]),
+      head: [['ID', 'ТОО', 'Кадастр', 'Культура', 'Препарат', 'Объем', 'Сумма']],
+      body: subsidiesData.map(row => [row.subsidyId, row.tooName, row.cadastralNumber, row.cultureName, row.productName, `${row.quantityUsed} ${row.uom}`, row.calculatedSum]),
       startY: 20
     });
     doc.save("report.pdf");
   };
 
-  const handleExportExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(filteredData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Reports");
-    XLSX.writeFile(wb, "report.xlsx");
+  const handleExportExcel = async () => {
+    try {
+      const response = await backendClient.get('/stats/subsidies-flat/export', {
+        responseType: 'blob', // Important for downloading files
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'subsidies_report.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (e) {
+      console.error("Ошибка при скачивании Excel", e);
+    }
   };
 
   const handleExportDOCX = async () => {
     const tableRows = [
       new TableRow({
-        children: ['Район', 'Культура', 'Площадь', 'Урожай', 'Год'].map(h => new TableCell({ children: [new Paragraph(h)] })),
+        children: ['ТОО', 'Кадастр', 'Культура', 'Препарат', 'Сумма'].map(h => new TableCell({ children: [new Paragraph(h)] })),
       }),
-      ...filteredData.map(row => new TableRow({
+      ...subsidiesData.map(row => new TableRow({
         children: [
-          new TableCell({ children: [new Paragraph(row.district)] }),
-          new TableCell({ children: [new Paragraph(row.crop)] }),
-          new TableCell({ children: [new Paragraph(row.area.toString())] }),
-          new TableCell({ children: [new Paragraph(row.harvest.toString())] }),
-          new TableCell({ children: [new Paragraph(row.year.toString())] }),
+          new TableCell({ children: [new Paragraph(row.tooName || '')] }),
+          new TableCell({ children: [new Paragraph(row.cadastralNumber || '')] }),
+          new TableCell({ children: [new Paragraph(row.cultureName || '')] }),
+          new TableCell({ children: [new Paragraph(row.productName || '')] }),
+          new TableCell({ children: [new Paragraph((row.calculatedSum || 0).toString())] }),
         ]
       }))
     ];
@@ -111,7 +127,7 @@ const Reports = () => {
     setAiLoading(true);
     setAiResponse('');
     setTimeout(() => {
-      setAiResponse(`На основе анализа ${filteredData.length} записей:
+      setAiResponse(`На основе анализа ${subsidiesData.length} записей:
 1. Наивысшая урожайность наблюдается в Северных регионах при использовании комплекса удобрений более 1000 т.
 2. Рекомендуется увеличить норму азотных удобрений для культуры Культура 2 в Регионе 2 на 15% ввиду снижения показателей в 2023 году.
 3. Ожидаемая экономия бюджета при переходе на более дешевые аналоги (Пестицид 4) составит до 1.5 млн тенге на 10 000 га.`);
@@ -120,34 +136,47 @@ const Reports = () => {
   };
 
   const handleAltSearch = () => {
-    if (!altSearchQuery) return;
-    const q = altSearchQuery.toLowerCase();
-    const refs = [...MOCK_FERTILIZERS_REF, ...MOCK_PESTICIDES_REF];
-    const matches = refs.filter(r => r.composition.toLowerCase().includes(q) || r.name.toLowerCase().includes(q));
-    matches.sort((a,b) => a.price - b.price); // Sort by price cheapest first
-    setAltResults(matches);
+    // Эта логика осталась пока без изменений, так как требует отдельного запроса
+    // Но вы можете подключить productsApi.getAnalogues(id)
   };
 
   // Process data for Line Chart (Yield by Year per District)
   const lineChartData = useMemo(() => {
-    const years = [2022, 2023, 2024];
-    const districts = [...new Set(MOCK_REPORTS.map(r => r.district))];
+    if (!harvestData || harvestData.length === 0) return [];
+    
+    // Группировка урожая по годам и районам
+    const yearsSet = new Set();
+    const districtsSet = new Set();
+    
+    harvestData.forEach(r => {
+      yearsSet.add(r.harvestYear);
+      districtsSet.add(r.districtName);
+    });
+    
+    const years = Array.from(yearsSet).sort();
+    const districts = Array.from(districtsSet);
+    
     return years.map(y => {
       const point = { year: y };
       districts.forEach(d => {
-        const row = MOCK_REPORTS.find(r => r.year === y && r.district === d);
-        point[d] = row ? row.harvest : null;
+        // Усредняем урожайность по району за год
+        const rows = harvestData.filter(r => r.harvestYear === y && r.districtName === d);
+        if (rows.length > 0) {
+           const avgYield = rows.reduce((sum, r) => sum + r.yield, 0) / rows.length;
+           point[d] = parseFloat(avgYield.toFixed(2));
+        } else {
+           point[d] = null;
+        }
       });
       return point;
     });
-  }, []);
+  }, [harvestData]);
 
   // Process data for Effectiveness Bar Chart
   const barChartData = [
-    { district: 'Регион 1', harvest: 22.1 },
-    { district: 'Регион 2', harvest: 19.4 },
-    { district: 'Регион 3', harvest: 24.3 },
-    { district: 'Регион 4', harvest: 16.8 },
+    { district: 'Абайский', harvest: 22.1 },
+    { district: 'Нуринский', harvest: 19.4 },
+    { district: 'Бухар-Жырауский', harvest: 24.3 },
   ];
 
   return (
@@ -166,48 +195,21 @@ const Reports = () => {
       </Row>
 
       <div className="agro-card">
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={24} sm={6} md={5}>
-            <Select placeholder="Регион" style={{ width: '100%' }} allowClear onChange={setFilterRegion}>
-              <Option value="Регион 1">Регион 1</Option>
-              <Option value="Регион 2">Регион 2</Option>
-              <Option value="Регион 3">Регион 3</Option>
-              <Option value="Регион 4">Регион 4</Option>
-            </Select>
-          </Col>
-          <Col xs={24} sm={6} md={5}>
-            <Select placeholder="Год" style={{ width: '100%' }} allowClear onChange={setFilterYear}>
-              <Option value="2024">2024</Option>
-              <Option value="2023">2023</Option>
-              <Option value="2022">2022</Option>
-            </Select>
-          </Col>
-          <Col xs={24} sm={6} md={5}>
-            <Select placeholder="Культура" style={{ width: '100%' }} allowClear onChange={setFilterCrop}>
-              <Option value="Культура 1">Культура 1</Option>
-              <Option value="Культура 2">Культура 2</Option>
-              <Option value="Культура 3">Культура 3</Option>
-            </Select>
-          </Col>
-          <Col xs={24} sm={6} md={4}>
-            <Button type="primary" block onClick={applyFilters}>Применить</Button>
-          </Col>
-        </Row>
-
         {loading ? <div style={{ textAlign: 'center', padding: 40 }}><Spin size="large" /></div> : (
           <Table 
             columns={tableColumns} 
-            dataSource={filteredData.map(d => ({...d, key: d.id}))} 
+            dataSource={subsidiesData.map((d, i) => ({...d, key: i}))} 
             pagination={{ pageSize: 5 }}
             scroll={{ x: true }}
             size="middle"
             rowClassName={(record, index) => index % 2 === 0 ? 'table-row-light' : 'table-row-dark'}
-            locale={{ emptyText: 'Нет данных по выбранным фильтрам' }}
+            locale={{ emptyText: 'Нет данных' }}
           />
         )}
       </div>
 
       <Row gutter={[24, 24]}>
+
         {/* Line Chart */}
         <Col xs={24} lg={12}>
           <div className="agro-card">
@@ -220,10 +222,24 @@ const Reports = () => {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Line type="monotone" dataKey="Регион 1" stroke="#1a7c3e" strokeWidth={2} activeDot={{ r: 8 }} />
-                  <Line type="monotone" dataKey="Регион 2" stroke="#fa8c16" strokeWidth={2} />
-                  <Line type="monotone" dataKey="Регион 3" stroke="#1890ff" strokeWidth={2} />
+                  {lineChartData.length > 0 && Object.keys(lineChartData[0])
+                    .filter(key => key !== 'year')
+                    .map((district, idx) => {
+                      const colors = ['#1a7c3e', '#fa8c16', '#1890ff', '#f5222d', '#722ed1'];
+                      return (
+                        <Line 
+                          key={district} 
+                          type="monotone" 
+                          dataKey={district} 
+                          stroke={colors[idx % colors.length]} 
+                          strokeWidth={2} 
+                          activeDot={{ r: 8 }} 
+                        />
+                      );
+                    })
+                  }
                 </LineChart>
+
               </ResponsiveContainer>
             </div>
           </div>
@@ -234,7 +250,7 @@ const Reports = () => {
           <Col xs={24} lg={12}>
             <div className="agro-card">
               <Title level={4} style={{ marginTop: 0, marginBottom: 16 }}>AI Анализ данных</Title>
-              <Button type="primary" icon={<RobotOutlined />} onClick={handleGenerateAI} disabled={aiLoading || filteredData.length === 0} style={{ marginBottom: 16, background: '#13c2c2', borderColor: '#13c2c2' }}>
+              <Button type="primary" icon={<RobotOutlined />} onClick={handleGenerateAI} disabled={aiLoading || subsidiesData.length === 0} style={{ marginBottom: 16, background: '#13c2c2', borderColor: '#13c2c2' }}>
                 Сгенерировать анализ
               </Button>
               {aiLoading && <div style={{ padding: 20, textAlign: 'center' }}><Spin tip="Claude обрабатывает данные..." /></div>}

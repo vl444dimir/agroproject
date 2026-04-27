@@ -21,18 +21,28 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (username, password) => {
+    const login = async (username, password) => {
     try {
       const response = await backendClient.post('/auth/login', { username, password });
       const { token } = response.data;
       
-      // We parse the token to extract role, or just assign a default role based on our knowledge.
-      // The backend token might contain claims, but let's just save the user.
-      const sessionUser = { login: username, role: 'admin', name: username }; // Forcing admin role for UI access to products/audit, since JWT parse might be complex if not standardized.
+      localStorage.setItem('token', token);
+      
+      // Fetch actual user profile and role from backend
+      const meResponse = await backendClient.get('/auth/me');
+      const userProfile = meResponse.data;
+      
+      const sessionUser = { 
+        id: userProfile.id,
+        login: userProfile.username, 
+        role: userProfile.role.replace('ROLE_', '').toLowerCase(), 
+        name: userProfile.username,
+        organizationId: userProfile.organizationId,
+        organizationName: userProfile.organizationName
+      }; 
       
       setUser(sessionUser);
       localStorage.setItem('agro_user', JSON.stringify(sessionUser));
-      localStorage.setItem('token', token);
       
       const ip = '127.0.0.1';
       const logEntry = {

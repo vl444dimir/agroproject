@@ -1,9 +1,11 @@
-import apiClient from './client';
+import backendClient from './backendClient';
 
 export const reportsApi = {
-  getReports: () => apiClient.get('/reports').catch(() => ({ data: [] })),
-  getReportById: (id) => apiClient.get(`/reports/${id}`),
-  createReport: (data) => apiClient.post('/reports', data),
-  updateReport: (id, data) => apiClient.put(`/reports/${id}`, data),
-  deleteReport: (id) => apiClient.delete(`/reports/${id}`),
+  getReports: () => backendClient.get('/subsidies').catch(() => ({ data: [] })),
+  getFlatReports: () => backendClient.get('/stats/subsidies-flat').catch(() => ({ data: [] })),
+  getReportById: (id) => backendClient.get(`/subsidies/${id}`),
+  createReport: (data) => backendClient.post('/subsidies', data),
+  updateReport: (id, data) => backendClient.put(`/subsidies/${id}`, data),
+  deleteReport: (id) => backendClient.delete(`/subsidies/${id}`),
 };
+
