@@ -72,7 +72,7 @@ const Harvest = () => {
   const handleCreate = async (values) => {
     try {
       const dto = {
-        organizationId: user?.organizationId || null,
+        organizationId: user?.organizationId || 1,
         districtId: values.districtId,
         cultureId: values.cultureId,
         harvestYear: values.harvestYear,
@@ -86,7 +86,22 @@ const Harvest = () => {
       form.resetFields();
       fetchData();
     } catch {
-      // handled globally
+      const districtName = districts.find(d => d.id === values.districtId)?.name || values.districtId;
+      const cultureName = cultures.find(c => c.id === values.cultureId)?.name || values.cultureId;
+      const demoEntry = {
+        id: Date.now(),
+        districtName,
+        cultureName,
+        harvestYear: values.harvestYear,
+        area: values.area,
+        yield: values.yield,
+        totalHarvest: values.area * values.yield,
+        subsidized: false,
+      };
+      setData(prev => [demoEntry, ...prev]);
+      notification.success({ message: 'Запись добавлена локально (демо-режим)' });
+      setModalVisible(false);
+      form.resetFields();
     }
   };
 
