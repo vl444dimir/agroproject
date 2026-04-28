@@ -39,7 +39,7 @@ const Login = () => {
       >
         <div style={{ marginBottom: 24, fontSize: 48 }}>🌿</div>
         <Title level={3} style={{ marginTop: 0, marginBottom: 8, color: '#262626' }}>
-          АгроМониторинг
+          <span style={{ color: '#1a7c3e' }}>Dala</span>Info
         </Title>
         <Text type="secondary" style={{ display: 'block', marginBottom: 32 }}>
           {isRegister ? 'Регистрация' : 'Вход в систему'}
