@@ -1,5 +1,6 @@
 node_modules/
 frontend/dist/
+AGENTS.md
 frontend/node_modules/
 backend/.gradle/
 backend/build/
