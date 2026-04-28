@@ -719,6 +719,15 @@
       "action": "Вход в систему (Бэкэнд)",
       "ip": "127.0.0.1",
       "status": "success"
+    },
+    {
+      "id": "1777359619124",
+      "datetime": "28.04.2026 12:00",
+      "user": "admin",
+      "role": "admin",
+      "action": "Вход в систему (Бэкэнд)",
+      "ip": "127.0.0.1",
+      "status": "success"
     }
   ],
   "notifications": [
