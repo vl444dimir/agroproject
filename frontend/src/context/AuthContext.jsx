@@ -13,7 +13,25 @@ export const AuthProvider = ({ children }) => {
     const savedUser = localStorage.getItem('agro_user');
     const token = localStorage.getItem('token');
     if (savedUser && token) {
-      setUser(JSON.parse(savedUser));
+      const parsed = JSON.parse(savedUser);
+      setUser(parsed);
+      backendClient.get('/auth/me').then(meRes => {
+        const me = meRes.data;
+        const freshUser = {
+          login: me.username || me.login || parsed.login,
+          role: me.role || me.authorities?.[0]?.authority?.replace('ROLE_', '')?.toLowerCase() || parsed.role,
+          name: me.name || me.username || parsed.name,
+          id: me.id || parsed.id,
+          organizationId: me.organizationId || parsed.organizationId,
+          organizationName: me.organizationName || parsed.organizationName,
+        };
+        setUser(freshUser);
+        localStorage.setItem('agro_user', JSON.stringify(freshUser));
+      }).catch(() => {
+        localStorage.removeItem('agro_user');
+        localStorage.removeItem('token');
+        setUser(null);
+      });
     } else {
       localStorage.removeItem('agro_user');
       localStorage.removeItem('token');
@@ -26,13 +44,26 @@ export const AuthProvider = ({ children }) => {
       const response = await backendClient.post('/auth/login', { username, password });
       const { token } = response.data;
       
-      // We parse the token to extract role, or just assign a default role based on our knowledge.
-      // The backend token might contain claims, but let's just save the user.
-      const sessionUser = { login: username, role: 'admin', name: username }; // Forcing admin role for UI access to products/audit, since JWT parse might be complex if not standardized.
+      localStorage.setItem('token', token);
+      
+      let sessionUser;
+      try {
+        const meRes = await backendClient.get('/auth/me');
+        sessionUser = meRes.data;
+        sessionUser = {
+          login: sessionUser.username || sessionUser.login || username,
+          role: sessionUser.role || sessionUser.authorities?.[0]?.authority?.replace('ROLE_', '')?.toLowerCase() || 'user',
+          name: sessionUser.name || sessionUser.username || username,
+          id: sessionUser.id,
+          organizationId: sessionUser.organizationId,
+          organizationName: sessionUser.organizationName,
+        };
+      } catch {
+        sessionUser = { login: username, role: 'admin', name: username };
+      }
       
       setUser(sessionUser);
       localStorage.setItem('agro_user', JSON.stringify(sessionUser));
-      localStorage.setItem('token', token);
       
       const ip = '127.0.0.1';
       const logEntry = {

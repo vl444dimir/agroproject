@@ -17,6 +17,7 @@ const Products = lazy(() => import('../pages/Products'));
 const BackendRefs = lazy(() => import('../pages/BackendRefs'));
 const Harvest = lazy(() => import('../pages/Harvest'));
 const Subsidies = lazy(() => import('../pages/Subsidies'));
+const Import = lazy(() => import('../pages/Import'));
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { role, loading } = useAuth();
@@ -67,6 +68,7 @@ const AppRouter = () => {
           <Route path="subsidies" element={<Subsidies />} />
           <Route path="products" element={<Products />} />
           <Route path="backend-refs" element={<BackendRefs />} />
+          <Route path="import" element={<Import />} />
           
           <Route 
             path="audit" 

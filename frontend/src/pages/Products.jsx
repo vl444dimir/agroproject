@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Typography, Table, Button, Input, Modal, Form, Space, InputNumber, notification, Row } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined, SearchOutlined } from '@ant-design/icons';
+import { Typography, Table, Button, Input, Modal, Form, Space, InputNumber, notification, Row, Tag } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined, SearchOutlined, ExperimentOutlined } from '@ant-design/icons';
 import { useAuth } from '../context/AuthContext';
 import { productsApi } from '../api/productsApi';
 
@@ -16,6 +16,11 @@ const Products = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [form] = Form.useForm();
+
+  const [analogModalVisible, setAnalogModalVisible] = useState(false);
+  const [analogProduct, setAnalogProduct] = useState(null);
+  const [analogues, setAnalogues] = useState([]);
+  const [analogLoading, setAnalogLoading] = useState(false);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -60,6 +65,21 @@ const Products = () => {
     }
   };
 
+  const handleShowAnalogues = async (record) => {
+    setAnalogProduct(record);
+    setAnalogues([]);
+    setAnalogModalVisible(true);
+    setAnalogLoading(true);
+    try {
+      const res = await productsApi.getAnalogues(record.id);
+      setAnalogues(res.data || []);
+    } catch {
+      setAnalogues([]);
+    } finally {
+      setAnalogLoading(false);
+    }
+  };
+
   const handleDelete = (id) => {
     Modal.confirm({
       title: 'Удаление продукта',
@@ -93,9 +113,12 @@ const Products = () => {
       cols.push({
         title: 'Действия',
         key: 'actions',
-        width: 120,
+        width: 200,
         render: (_, record) => (
           <Space>
+            <Button size="small" icon={<ExperimentOutlined />} onClick={() => handleShowAnalogues(record)}>
+              Аналоги
+            </Button>
             <Button size="small" icon={<EditOutlined />} onClick={() => openModal(record)} />
             {role === 'admin' && (
                <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} />
@@ -168,6 +191,35 @@ const Products = () => {
         </Form>
       </Modal>
 
+      <Modal
+        title={analogProduct ? `Аналоги для: ${analogProduct.name}` : 'Аналоги'}
+        open={analogModalVisible}
+        onCancel={() => { setAnalogModalVisible(false); setAnalogues([]); }}
+        footer={null}
+        width={700}
+        destroyOnClose
+      >
+        {analogLoading ? (
+          <div style={{ textAlign: 'center', padding: 40 }}>Загрузка аналогов...</div>
+        ) : analogues.length > 0 ? (
+          <Table
+            dataSource={analogues.map((a, i) => ({ ...a, key: i }))}
+            columns={[
+              { title: 'Название', dataIndex: 'name', key: 'name' },
+              { title: 'Описание', dataIndex: 'description', key: 'description', ellipsis: true },
+              { title: 'Цена (₸)', dataIndex: 'price', key: 'price', render: p => p?.toLocaleString('ru-RU') || '—' },
+              { title: 'Категория', dataIndex: 'categoryName', key: 'categoryName', render: v => v ? <Tag>{v}</Tag> : '—' },
+            ]}
+            size="middle"
+            pagination={false}
+            locale={{ emptyText: 'Нет данных' }}
+          />
+        ) : (
+          <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
+            Аналоги для данного продукта не найдены
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

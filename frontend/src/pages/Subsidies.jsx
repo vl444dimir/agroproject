@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Typography, Table, Button, Modal, Form, Select, InputNumber, Input, Space, Tag, notification, Row, Spin, Alert, Descriptions, Collapse, Divider } from 'antd';
-import { PlusOutlined, ReloadOutlined, EyeOutlined, WarningOutlined, CheckCircleOutlined, CloseCircleOutlined, ExperimentOutlined } from '@ant-design/icons';
+import { PlusOutlined, ReloadOutlined, EyeOutlined, WarningOutlined, CheckCircleOutlined, CloseCircleOutlined, ExperimentOutlined, FileExcelOutlined, BarChartOutlined } from '@ant-design/icons';
 import { useAuth } from '../context/AuthContext';
 import { subsidiesApi } from '../api/subsidiesApi';
 import { culturesApi } from '../api/culturesApi';
@@ -56,6 +56,45 @@ const Subsidies = () => {
 
   const [detailVisible, setDetailVisible] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportFlat = async () => {
+    setExporting(true);
+    try {
+      const res = await subsidiesApi.exportFlatExcel();
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'subsidies-flat.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      notification.success({ message: 'Excel-отчёт (сводный) скачан' });
+    } catch {
+      notification.error({ message: 'Ошибка при выгрузке сводного отчёта' });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleExportGrouped = async () => {
+    setExporting(true);
+    try {
+      const res = await subsidiesApi.exportGroupedExcel();
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'subsidies-grouped.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      notification.success({ message: 'Excel-отчёт (группировка) скачан' });
+    } catch {
+      notification.error({ message: 'Ошибка при выгрузке группированного отчёта' });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const fetchRefs = useCallback(async () => {
     try {
@@ -172,6 +211,12 @@ const Subsidies = () => {
         <Title level={2} className="agro-page-title" style={{ margin: 0 }}>Заявки на субсидии</Title>
         <Space>
           <Button icon={<ReloadOutlined />} onClick={fetchData} loading={loading}>Обновить</Button>
+          <Button icon={<FileExcelOutlined />} onClick={handleExportFlat} loading={exporting}>
+            Выгрузить сводный
+          </Button>
+          <Button icon={<BarChartOutlined />} onClick={handleExportGrouped} loading={exporting}>
+            Выгрузить с группировкой
+          </Button>
           {canCreate && (
             <Button type="primary" icon={<PlusOutlined />} onClick={() => { form.resetFields(); setModalVisible(true); }}>
               Новая заявка

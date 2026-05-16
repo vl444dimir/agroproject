@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Typography, Tabs, Table, Button, Input, Modal, Form, Space, notification, Row, Spin, Tag, Popconfirm } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, ExperimentOutlined, BankOutlined, TagsOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, ExperimentOutlined, BankOutlined, TagsOutlined, EnvironmentOutlined, PartitionOutlined } from '@ant-design/icons';
 import { useAuth } from '../context/AuthContext';
 import { manufacturersApi } from '../api/manufacturersApi';
 import { categoriesApi } from '../api/categoriesApi';
 import { culturesApi } from '../api/culturesApi';
 import { ingredientsApi } from '../api/ingredientsApi';
+import { districtsApi } from '../api/districtsApi';
 
 const { Title } = Typography;
 
@@ -155,6 +156,58 @@ const CrudTab = ({ role, api, entityName, columns, formFields, rowKey = 'id' }) 
   );
 };
 
+/* ────────────── Районы (read-only, только GET) ────────────── */
+
+const DistrictTab = () => {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const fetch = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await districtsApi.getAll();
+      setData(res.data || []);
+    } catch {
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetch(); }, [fetch]);
+
+  const filtered = data.filter(item =>
+    JSON.stringify(item).toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="agro-card">
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>
+        <Input.Search
+          placeholder="Поиск по району..."
+          style={{ maxWidth: 350 }}
+          allowClear
+          onChange={e => setSearch(e.target.value)}
+        />
+        <Button icon={<ReloadOutlined />} onClick={fetch} loading={loading}>Обновить</Button>
+      </div>
+      <Table
+        columns={[
+          { title: 'ID', dataIndex: 'id', key: 'id', width: 60 },
+          { title: 'Наименование', dataIndex: 'name', key: 'name' },
+        ]}
+        dataSource={filtered.map(r => ({ ...r, key: r.id }))}
+        size="middle"
+        loading={loading}
+        locale={{ emptyText: 'Нет записей в базе данных' }}
+        rowClassName={(_, i) => i % 2 === 0 ? 'table-row-light' : 'table-row-dark'}
+        pagination={{ pageSize: 10, showSizeChanger: true, pageSizeOptions: ['10', '25', '50'] }}
+      />
+    </div>
+  );
+};
+
 /* ────────────── Основная страница ────────────── */
 
 const BackendRefs = () => {
@@ -228,6 +281,11 @@ const BackendRefs = () => {
           }
         />
       ),
+    },
+    {
+      key: 'districts',
+      label: <><PartitionOutlined /> Районы</>,
+      children: <DistrictTab />,
     },
     {
       key: 'ingredients',

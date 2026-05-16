@@ -12,7 +12,8 @@ import {
   AppstoreAddOutlined,
   DatabaseOutlined,
   RiseOutlined,
-  DollarOutlined
+  DollarOutlined,
+  ImportOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../context/AuthContext';
 
@@ -78,6 +79,11 @@ const AppSider = () => {
         key: '/documents',
         icon: <FolderOutlined />,
         label: 'Управление документами',
+      });
+      items.push({
+        key: '/import',
+        icon: <ImportOutlined />,
+        label: 'Импорт из Excel',
       });
     }
 
