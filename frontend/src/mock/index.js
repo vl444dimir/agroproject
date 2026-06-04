@@ -37,17 +37,39 @@ export const initAPI = async () => {
       dashboardApi.getMapDistricts()
     ]);
 
-    MOCK_USERS = users.data || [];
-    MOCK_KPI = kpi.data && Object.keys(kpi.data).length ? kpi.data : { landArea: '', sownArea: '', harvest: '', fertilizers: '', pesticides: '', subsidies: '' };
-    MOCK_TOP_FERTILIZERS = topF.data || [];
-    MOCK_TOP_PESTICIDES = topP.data || [];
-    MOCK_REPORTS = reports.data || [];
-    MOCK_FERTILIZERS_REF = fertRef.data || [];
-    MOCK_PESTICIDES_REF = pestRef.data || [];
-    MOCK_DOCUMENTS = docs.data || [];
-    MOCK_SUPPLY_CHAIN = sc.data || [];
-    MOCK_AUDIT_LOG = audit.data || [];
-    MOCK_NOTIFICATIONS = notif.data || [];
+    MOCK_USERS.length = 0;
+    MOCK_USERS.push(...(users.data || []));
+
+    if (kpi.data && Object.keys(kpi.data).length) {
+      Object.assign(MOCK_KPI, kpi.data);
+    }
+
+    MOCK_TOP_FERTILIZERS.length = 0;
+    MOCK_TOP_FERTILIZERS.push(...(topF.data || []));
+
+    MOCK_TOP_PESTICIDES.length = 0;
+    MOCK_TOP_PESTICIDES.push(...(topP.data || []));
+
+    MOCK_REPORTS.length = 0;
+    MOCK_REPORTS.push(...(reports.data || []));
+
+    MOCK_FERTILIZERS_REF.length = 0;
+    MOCK_FERTILIZERS_REF.push(...(fertRef.data || []));
+
+    MOCK_PESTICIDES_REF.length = 0;
+    MOCK_PESTICIDES_REF.push(...(pestRef.data || []));
+
+    MOCK_DOCUMENTS.length = 0;
+    MOCK_DOCUMENTS.push(...(docs.data || []));
+
+    MOCK_SUPPLY_CHAIN.length = 0;
+    MOCK_SUPPLY_CHAIN.push(...(sc.data || []));
+
+    MOCK_AUDIT_LOG.length = 0;
+    MOCK_AUDIT_LOG.push(...(audit.data || []));
+
+    MOCK_NOTIFICATIONS.length = 0;
+    MOCK_NOTIFICATIONS.push(...(notif.data || []));
     
     const calcNormsObj = {};
     (calc.data || []).forEach(item => {
@@ -59,9 +81,10 @@ export const initAPI = async () => {
         pricePerHa: item.pricePerHa
       };
     });
-    CALC_NORMS = calcNormsObj;
+    Object.assign(CALC_NORMS, calcNormsObj);
     
-    MOCK_MAP_DISTRICTS = mapDistricts.data || [];
+    MOCK_MAP_DISTRICTS.length = 0;
+    MOCK_MAP_DISTRICTS.push(...(mapDistricts.data || []));
   } catch (error) {
     console.error("Failed to load data from json-server", error);
   }

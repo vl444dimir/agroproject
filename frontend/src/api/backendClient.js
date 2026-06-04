@@ -35,6 +35,8 @@ backendClient.interceptors.response.use(
         // Clear invalid token
         localStorage.removeItem('token');
         localStorage.removeItem('agro_user');
+        // Force redirect to login to clear React state and allow a clean login
+        window.location.href = '/login';
       } else if (status === 403) {
         description = 'Недостаточно прав для выполнения действия.';
       } else if (status === 500) {

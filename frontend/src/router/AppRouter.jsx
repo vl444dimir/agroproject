@@ -14,6 +14,8 @@ const Documents = lazy(() => import('../pages/Documents'));
 const Reporting = lazy(() => import('../pages/Reporting'));
 const Audit = lazy(() => import('../pages/Audit'));
 const Products = lazy(() => import('../pages/Products'));
+const Import = lazy(() => import('../pages/Import'));
+const MarketAnalysis = lazy(() => import('../pages/MarketAnalysis'));
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { role, loading } = useAuth();
@@ -56,11 +58,13 @@ const AppRouter = () => {
         >
           <Route index element={<Dashboard />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="market-analysis" element={<MarketAnalysis />} />
           <Route path="calculator" element={<Calculator />} />
           <Route path="references" element={<References />} />
           <Route path="documents" element={<Documents />} />
           <Route path="reporting" element={<Reporting />} />
           <Route path="products" element={<Products />} />
+          <Route path="import" element={<Import />} />
           
           <Route 
             path="audit" 

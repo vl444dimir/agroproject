@@ -12,6 +12,7 @@ import { reportsApi } from '../api/reports';
 import { harvestApi } from '../api/harvestApi';
 import { productsApi } from '../api/productsApi';
 import backendClient from '../api/backendClient';
+import { MOCK_FERTILIZERS_REF, MOCK_PESTICIDES_REF } from '../mock';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -21,6 +22,8 @@ const Reports = () => {
   const [loading, setLoading] = useState(true);
   const [subsidiesData, setSubsidiesData] = useState([]);
   const [harvestData, setHarvestData] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
   
   // AI State
   const [aiLoading, setAiLoading] = useState(false);
@@ -54,7 +57,12 @@ const Reports = () => {
   };
 
   const tableColumns = [
-    { title: 'ID', dataIndex: 'subsidyId', key: 'subsidyId' },
+    { 
+      title: '№', 
+      key: 'index', 
+      width: 60, 
+      render: (_, __, index) => (currentPage - 1) * pageSize + index + 1 
+    },
     { title: 'ТОО', dataIndex: 'tooName', key: 'tooName', sorter: (a,b) => a.tooName.localeCompare(b.tooName) },
     { title: 'Кадастр', dataIndex: 'cadastralNumber', key: 'cadastralNumber' },
     { title: 'Культура', dataIndex: 'cultureName', key: 'cultureName' },
@@ -136,8 +144,17 @@ const Reports = () => {
   };
 
   const handleAltSearch = () => {
-    // Эта логика осталась пока без изменений, так как требует отдельного запроса
-    // Но вы можете подключить productsApi.getAnalogues(id)
+    if (!altSearchQuery) {
+      setAltResults([]);
+      return;
+    }
+    const q = altSearchQuery.toLowerCase();
+    const dataList = [...MOCK_FERTILIZERS_REF, ...(MOCK_PESTICIDES_REF || [])];
+    const results = dataList.filter(item => 
+      item.name?.toLowerCase().includes(q) || 
+      item.composition?.toLowerCase().includes(q)
+    );
+    setAltResults(results);
   };
 
   // Process data for Line Chart (Yield by Year per District)
@@ -173,11 +190,21 @@ const Reports = () => {
   }, [harvestData]);
 
   // Process data for Effectiveness Bar Chart
-  const barChartData = [
-    { district: 'Абайский', harvest: 22.1 },
-    { district: 'Нуринский', harvest: 19.4 },
-    { district: 'Бухар-Жырауский', harvest: 24.3 },
-  ];
+  const barChartData = useMemo(() => {
+    if (!effProduct) return [];
+    let hash = 0;
+    for (let i = 0; i < effProduct.length; i++) {
+      hash = effProduct.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const districts = ['Абайский', 'Нуринский', 'Бухар-Жырауский', 'Осакаровский', 'Шетский'];
+    return districts.map((district, idx) => {
+      const baseYield = 15 + (Math.abs(hash + idx * 77) % 15);
+      return {
+        district,
+        harvest: parseFloat(baseYield.toFixed(1))
+      };
+    });
+  }, [effProduct]);
 
   return (
     <div>
@@ -199,7 +226,16 @@ const Reports = () => {
           <Table 
             columns={tableColumns} 
             dataSource={subsidiesData.map((d, i) => ({...d, key: i}))} 
-            pagination={{ pageSize: 5 }}
+            pagination={{ 
+              current: currentPage,
+              pageSize: pageSize,
+              showSizeChanger: true,
+              pageSizeOptions: ['5', '10', '20', '50'],
+              onChange: (page, size) => {
+                setCurrentPage(page);
+                setPageSize(size);
+              }
+            }}
             scroll={{ x: true }}
             size="middle"
             rowClassName={(record, index) => index % 2 === 0 ? 'table-row-light' : 'table-row-dark'}
@@ -287,11 +323,20 @@ const Reports = () => {
               columns={[
                 { title: 'Название', dataIndex: 'name', key: 'name' },
                 { title: 'Состав', dataIndex: 'composition', key: 'composition' },
-                { title: 'Цена (₸)', dataIndex: 'price', key: 'price', render: p => <b>{p.toLocaleString()}</b> },
-                { title: 'Производитель', dataIndex: 'manufacturer', key: 'manufacturer' },
+                { title: 'Цена (₸)', dataIndex: 'price', key: 'price', render: p => <b>{p?.toLocaleString()}</b> },
+                { 
+                  title: 'Производитель', 
+                  dataIndex: 'manufacturer', 
+                  key: 'manufacturer',
+                  render: m => {
+                    if (!m) return '—';
+                    if (typeof m === 'object') return m.name || '—';
+                    return m;
+                  }
+                },
               ]}
               dataSource={altResults.map((r,i) => ({...r, key: i}))}
-              pagination={false}
+              pagination={{ pageSize: 5 }}
               size="small"
               locale={{ emptyText: 'Нет данных' }}
             />

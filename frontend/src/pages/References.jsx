@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Typography, Tabs, Table, Button, Input, Modal, Form, Space, InputNumber, Tag, Select, List, message, Row, Alert } from 'antd';
+import { Typography, Tabs, Table, Button, Input, Modal, Form, Space, InputNumber, Tag, Select, List, message, Row, Alert, Descriptions } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined, CheckOutlined, SearchOutlined } from '@ant-design/icons';
 import { useAuth } from '../context/AuthContext';
 import { MOCK_FERTILIZERS_REF, MOCK_PESTICIDES_REF } from '../mock';
@@ -10,9 +10,19 @@ const { Option } = Select;
 const References = () => {
   const { role } = useAuth();
   
-  // Инициализируем данные с меткой status
-  const [fertData, setFertData] = useState(MOCK_FERTILIZERS_REF.map(f => ({ ...f, status: f.status || 'active' })));
-  const [pestData, setPestData] = useState(MOCK_PESTICIDES_REF.map(p => ({ ...p, status: p.status || 'active' })));
+  // Инициализируем данные и безопасно маппим поля бэкенда (formulation -> composition, normOfUse -> norm, price -> 0)
+  const mapBackendProps = (item) => ({
+    ...item,
+    id: item.id || Date.now() + Math.random(),
+    status: item.status || 'active',
+    composition: item.composition || item.formulation || '—',
+    norm: item.norm || item.normOfUse || '—',
+    price: item.price ?? 0,
+    manufacturer: item.manufacturer || (item.manufacturerName ? { name: item.manufacturerName } : null) || '—'
+  });
+
+  const [fertData, setFertData] = useState(MOCK_FERTILIZERS_REF.map(mapBackendProps));
+  const [pestData, setPestData] = useState(MOCK_PESTICIDES_REF.map(mapBackendProps));
   
   const [fertSearch, setFertSearch] = useState('');
   const [pestSearch, setPestSearch] = useState('');
@@ -20,6 +30,15 @@ const References = () => {
   const [modalType, setModalType] = useState(null); // 'fert_add', 'fert_edit', 'pest_add', 'pest_edit'
   const [editingItem, setEditingItem] = useState(null);
   const [form] = Form.useForm();
+
+  // Состояния для просмотра деталей
+  const [viewModalVisible, setViewModalVisible] = useState(false);
+  const [viewingItem, setViewingItem] = useState(null);
+
+  const handleView = (record) => {
+    setViewingItem(record);
+    setViewModalVisible(true);
+  };
 
   // Состояния для поиска аналогов
   const [analogModalVisible, setAnalogModalVisible] = useState(false);
@@ -110,11 +129,43 @@ const References = () => {
 
   const getColumns = (type) => {
     const cols = [
-      { title: 'Название', dataIndex: 'name', key: 'name' },
+      { 
+        title: 'Название', 
+        dataIndex: 'name', 
+        key: 'name',
+        render: (text, record) => (
+          <span 
+            className="product-name-link"
+            onClick={() => handleView(record)}
+          >
+            {text}
+          </span>
+        )
+      },
+      { 
+        title: 'Категория', 
+        dataIndex: 'categoryName', 
+        key: 'categoryName',
+        render: c => c || (type === 'fert' ? 'Удобрения' : 'Пестициды')
+      },
       { title: 'Состав', dataIndex: 'composition', key: 'composition' },
       { title: 'Норма', dataIndex: 'norm', key: 'norm' },
-      { title: 'Цена (₸)', dataIndex: 'price', key: 'price', render: p => p.toLocaleString('ru-RU') },
-      { title: 'Производитель', dataIndex: 'manufacturer', key: 'manufacturer' },
+      { 
+        title: 'Цена (₸)', 
+        dataIndex: 'price', 
+        key: 'price', 
+        render: p => p != null ? p.toLocaleString('ru-RU') : '0' 
+      },
+      { 
+        title: 'Производитель', 
+        dataIndex: 'manufacturer', 
+        key: 'manufacturer',
+        render: m => {
+          if (!m) return '—';
+          if (typeof m === 'object') return m.name || '—';
+          return m;
+        }
+      },
       {
         title: 'Статус',
         dataIndex: 'status',
@@ -267,7 +318,9 @@ const References = () => {
             size="large"
           >
             {(analogType === 'fert' ? fertData : pestData).filter(d => d.status === 'active').map(d => (
-              <Option key={d.id} value={d.id}>{d.name} (₸ {d.price.toLocaleString('ru-RU')} / ед.)</Option>
+              <Option key={d.id} value={d.id}>
+                {d.name} (₸ {d.price != null ? d.price.toLocaleString('ru-RU') : '0'} / ед.)
+              </Option>
             ))}
           </Select>
           <Button type="primary" size="large" icon={<SearchOutlined />} onClick={findAnalogs} disabled={!selectedForAnalog}>
@@ -289,15 +342,15 @@ const References = () => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                       <Text strong style={{ fontSize: 16 }}>{item.name}</Text>
                       <Tag color="green" style={{ fontSize: 14, padding: '2px 8px' }}>
-                        Экономия: ₸ {savings.toLocaleString('ru-RU')} с единицы
+                        Экономия: ₸ {savings != null ? savings.toLocaleString('ru-RU') : '0'} с единицы
                       </Tag>
                     </div>
                     <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
                       <b>Состав:</b> {item.composition} <br />
-                      <b>Производитель:</b> {item.manufacturer}
+                      <b>Производитель:</b> {typeof item.manufacturer === 'object' ? item.manufacturer?.name || '—' : item.manufacturer || '—'}
                     </Text>
                     <div>
-                      <Text type="danger" strong>Ваша новая цена: ₸ {item.price.toLocaleString('ru-RU')}</Text>
+                      <Text type="danger" strong>Ваша новая цена: ₸ {item.price != null ? item.price.toLocaleString('ru-RU') : '0'}</Text>
                     </div>
                   </div>
                 </List.Item>
@@ -307,6 +360,91 @@ const References = () => {
         ) : selectedForAnalog ? (
            <Alert message="Среди активных предложений аналоги с подходящим составом и ценой ниже выбранного пока не найдены." type="warning" showIcon />
         ) : null}
+      </Modal>
+
+      <Modal
+        title="Информация о препарате"
+        open={viewModalVisible}
+        onCancel={() => setViewModalVisible(false)}
+        footer={[
+          <Button key="close" type="primary" onClick={() => setViewModalVisible(false)}>
+            Закрыть
+          </Button>
+        ]}
+        width={700}
+      >
+        {viewingItem ? (
+          <div>
+            <Title level={3} style={{ marginTop: 0, color: '#1a7c3e', marginBottom: 20 }}>
+              {viewingItem.name}
+            </Title>
+            <Descriptions bordered column={1} size="middle" labelStyle={{ width: '35%', fontWeight: '600', backgroundColor: '#fafafa' }}>
+              <Descriptions.Item label="Категория">
+                {viewingItem.categoryName || (viewingItem.category?.name) || (analogType === 'fert' ? 'Удобрения' : 'Пестициды')}
+              </Descriptions.Item>
+              <Descriptions.Item label="Состав / Препаративная форма">
+                {viewingItem.composition || viewingItem.formulation || '—'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Норма применения">
+                {viewingItem.norm || viewingItem.normOfUse || '—'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Цена (₸)">
+                {viewingItem.price != null ? viewingItem.price.toLocaleString('ru-RU') : '0'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Производитель">
+                {typeof viewingItem.manufacturer === 'object' 
+                  ? viewingItem.manufacturer?.name || '—' 
+                  : viewingItem.manufacturer || '—'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Статус">
+                {viewingItem.status === 'proposed' ? (
+                  <Tag color="warning">На модерации</Tag>
+                ) : (
+                  <Tag color="green">Активен</Tag>
+                )}
+              </Descriptions.Item>
+              {viewingItem.targetObject && (
+                <Descriptions.Item label="Вредный объект / Назначение">
+                  {viewingItem.targetObject}
+                </Descriptions.Item>
+              )}
+              {viewingItem.hazardClass && (
+                <Descriptions.Item label="Класс опасности">
+                  {viewingItem.hazardClass}
+                </Descriptions.Item>
+              )}
+              {viewingItem.registrationDate && (
+                <Descriptions.Item label="Дата регистрации">
+                  {new Date(viewingItem.registrationDate).toLocaleDateString('ru-RU')}
+                </Descriptions.Item>
+              )}
+              {viewingItem.ingredients && viewingItem.ingredients.length > 0 && (
+                <Descriptions.Item label="Действующие вещества">
+                  <Space wrap>
+                    {viewingItem.ingredients.map((ing, idx) => (
+                      <Tag color="green" key={idx}>
+                        {ing.ingredientName} {ing.concentration ? `(${ing.concentration})` : ''}
+                      </Tag>
+                    ))}
+                  </Space>
+                </Descriptions.Item>
+              )}
+              {viewingItem.cultureNames && viewingItem.cultureNames.length > 0 && (
+                <Descriptions.Item label="Культуры">
+                  <Space wrap>
+                    {viewingItem.cultureNames.map((culture, idx) => (
+                      <Tag color="blue" key={idx}>
+                        {culture}
+                      </Tag>
+                    ))}
+                  </Space>
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', padding: 20 }}>Нет данных для отображения</div>
+        )}
       </Modal>
     </div>
   );

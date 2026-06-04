@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Row, Col, Card, Form, InputNumber, Select, Button, Typography, Collapse, List, Tag } from 'antd';
+import { Row, Col, Card, Form, InputNumber, Select, Button, Typography, Collapse, List, Tag, Alert } from 'antd';
 import { CalculatorOutlined, SaveOutlined, HistoryOutlined } from '@ant-design/icons';
 import { CALC_NORMS } from '../mock';
 
@@ -144,7 +144,4 @@ const Calculator = () => {
   );
 };
   
-// Need to add Alert to imports
-import { Alert } from 'antd';
-// Will just fix export issue manually below inline:
 export default Calculator;

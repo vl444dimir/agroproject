@@ -1,6 +1,21 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import backendClient from '../api/backendClient';
-import { MOCK_AUDIT_LOG } from '../mock';
+import { 
+  initAPI,
+  MOCK_USERS, 
+  MOCK_KPI, 
+  MOCK_TOP_FERTILIZERS, 
+  MOCK_TOP_PESTICIDES, 
+  MOCK_REPORTS, 
+  MOCK_FERTILIZERS_REF, 
+  MOCK_PESTICIDES_REF, 
+  MOCK_DOCUMENTS, 
+  MOCK_SUPPLY_CHAIN, 
+  MOCK_AUDIT_LOG, 
+  MOCK_NOTIFICATIONS, 
+  CALC_NORMS, 
+  MOCK_MAP_DISTRICTS 
+} from '../mock';
 import { auditApi } from '../api';
 
 const AuthContext = createContext();
@@ -40,6 +55,9 @@ export const AuthProvider = ({ children }) => {
         organizationId: userProfile.organizationId,
         organizationName: userProfile.organizationName
       }; 
+      
+      // Re-run initAPI so all global tables and KPIs are fetched using the valid token
+      await initAPI();
       
       setUser(sessionUser);
       localStorage.setItem('agro_user', JSON.stringify(sessionUser));
@@ -106,6 +124,25 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     localStorage.removeItem('agro_user');
     localStorage.removeItem('token');
+    
+    // Clear all mock/fetched global lists to ensure clean session state
+    MOCK_USERS.length = 0;
+    MOCK_KPI.landArea = '';
+    MOCK_KPI.sownArea = '';
+    MOCK_KPI.harvest = '';
+    MOCK_KPI.fertilizers = '';
+    MOCK_KPI.pesticides = '';
+    MOCK_KPI.subsidies = '';
+    MOCK_TOP_FERTILIZERS.length = 0;
+    MOCK_TOP_PESTICIDES.length = 0;
+    MOCK_REPORTS.length = 0;
+    MOCK_FERTILIZERS_REF.length = 0;
+    MOCK_PESTICIDES_REF.length = 0;
+    MOCK_DOCUMENTS.length = 0;
+    MOCK_SUPPLY_CHAIN.length = 0;
+    MOCK_NOTIFICATIONS.length = 0;
+    Object.keys(CALC_NORMS).forEach(key => delete CALC_NORMS[key]);
+    MOCK_MAP_DISTRICTS.length = 0;
   };
 
   return (

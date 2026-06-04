@@ -9,11 +9,13 @@ import {
   FolderOutlined,
   ContainerOutlined,
   AuditOutlined,
-  AppstoreAddOutlined
+  AppstoreAddOutlined,
+  UploadOutlined,
+  RiseOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../context/AuthContext';
 
-const { Sider } = Layout;
+const Sider = Layout.Sider;
 
 const AppSider = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -32,6 +34,11 @@ const AppSider = () => {
         key: '/reports',
         icon: <FileTextOutlined />,
         label: 'Отчёты и аналитика',
+      },
+      {
+        key: '/market-analysis',
+        icon: <RiseOutlined />,
+        label: 'Анализ рынка сбыта',
       },
       {
         key: '/calculator',
@@ -56,10 +63,15 @@ const AppSider = () => {
         icon: <AppstoreAddOutlined />,
         label: 'Продукты (Бэкэнд)',
       });
+      // items.push({
+      //   key: '/documents',
+      //   icon: <FolderOutlined />,
+      //   label: 'Управление документами',
+      // });
       items.push({
-        key: '/documents',
-        icon: <FolderOutlined />,
-        label: 'Управление документами',
+        key: '/import',
+        icon: <UploadOutlined />,
+        label: 'Импорт из Excel',
       });
     }
 
