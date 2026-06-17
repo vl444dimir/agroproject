@@ -16,6 +16,7 @@ const Audit = lazy(() => import('../pages/Audit'));
 const Products = lazy(() => import('../pages/Products'));
 const Import = lazy(() => import('../pages/Import'));
 const MarketAnalysis = lazy(() => import('../pages/MarketAnalysis'));
+const LivestockTracking = lazy(() => import('../pages/LivestockTracking'));
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { role, loading } = useAuth();
@@ -65,6 +66,7 @@ const AppRouter = () => {
           <Route path="reporting" element={<Reporting />} />
           <Route path="products" element={<Products />} />
           <Route path="import" element={<Import />} />
+          <Route path="livestock" element={<LivestockTracking />} />
           
           <Route 
             path="audit" 

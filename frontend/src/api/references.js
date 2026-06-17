@@ -6,4 +6,11 @@ export const referencesApi = {
   getPesticides: () => backendClient.get('/products?categoryName=Пестициды').catch(() => ({ data: [] })),
   getCultures: () => backendClient.get('/cultures').catch(() => ({ data: [] })),
   getDistricts: () => backendClient.get('/districts').catch(() => ({ data: [] })),
+
+  getIngredients: () => backendClient.get('/ingredients').catch(() => ({ data: [] })),
+  getCategories: () => backendClient.get('/categories').catch(() => ({ data: [] })),
+  getManufacturers: () => backendClient.get('/manufacturers').catch(() => ({ data: [] })),
+  createProduct: (product) => backendClient.post('/products', product),
+  updateProduct: (id, product) => backendClient.put(`/products/${id}`, product),
+  deleteProduct: (id) => backendClient.delete(`/products/${id}`),
 };

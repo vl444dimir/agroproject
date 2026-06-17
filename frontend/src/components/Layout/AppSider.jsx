@@ -12,6 +12,7 @@ import {
   AppstoreAddOutlined,
   UploadOutlined,
   RiseOutlined,
+  StockOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../context/AuthContext';
 
@@ -54,6 +55,11 @@ const AppSider = () => {
         key: '/reporting',
         icon: <ContainerOutlined />,
         label: 'Формирование отчетов',
+      },
+      {
+        key: '/livestock',
+        icon: <StockOutlined />,
+        label: 'Поголовье скота',
       },
     ];
 

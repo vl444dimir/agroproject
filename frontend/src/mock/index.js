@@ -18,23 +18,27 @@ export let CALC_NORMS = {};
 export let MOCK_MAP_DISTRICTS = [];
 
 export const initAPI = async () => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return;
+  }
   try {
     const [
       users, kpi, topF, topP, reports, fertRef, pestRef, docs, sc, audit, notif, calc, mapDistricts
     ] = await Promise.all([
-      authApi.getUsers(),
-      dashboardApi.getKPI(),
-      dashboardApi.getTopFertilizers(),
-      dashboardApi.getTopPesticides(),
-      reportsApi.getReports(),
-      referencesApi.getFertilizers(),
-      referencesApi.getPesticides(),
-      documentsApi.getDocuments(),
-      supplyChainApi.getSupplyChain(),
-      auditApi.getAuditLog(),
-      notificationsApi.getNotifications(),
-      calculatorApi.getCalcNorms(),
-      dashboardApi.getMapDistricts()
+      authApi.getUsers().catch(() => ({ data: [] })),
+      dashboardApi.getKPI().catch(() => ({ data: {} })),
+      dashboardApi.getTopFertilizers().catch(() => ({ data: [] })),
+      dashboardApi.getTopPesticides().catch(() => ({ data: [] })),
+      reportsApi.getReports().catch(() => ({ data: [] })),
+      referencesApi.getFertilizers().catch(() => ({ data: [] })),
+      referencesApi.getPesticides().catch(() => ({ data: [] })),
+      documentsApi.getDocuments().catch(() => ({ data: [] })),
+      supplyChainApi.getSupplyChain().catch(() => ({ data: [] })),
+      auditApi.getAuditLog().catch(() => ({ data: [] })),
+      notificationsApi.getNotifications().catch(() => ({ data: [] })),
+      calculatorApi.getCalcNorms().catch(() => ({ data: [] })),
+      dashboardApi.getMapDistricts().catch(() => ({ data: [] }))
     ]);
 
     MOCK_USERS.length = 0;

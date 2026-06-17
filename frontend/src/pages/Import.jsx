@@ -1,18 +1,19 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   Typography, Steps, Button, Select, Upload, Table, Radio, Space,
-  Spin, notification, Badge, Tag, Tooltip, Progress, Empty, Alert,
+  Spin, notification, Badge, Tag, Tooltip, Progress, Empty, Alert, Drawer, Row, Col, Input
 } from 'antd';
 import {
   UploadOutlined, InboxOutlined, FileExcelOutlined,
   DeleteOutlined, CheckCircleOutlined, WarningOutlined,
   CloseCircleOutlined, SwapOutlined, ThunderboltOutlined,
   ArrowLeftOutlined, ArrowRightOutlined, ReloadOutlined,
-  DownloadOutlined,
+  DownloadOutlined, RobotOutlined, SendOutlined, SettingOutlined
 } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import { importApi } from '../api/importApi';
 import { initAPI } from '../mock';
+import { askGemini, parseJsonFromText } from '../api/gemini';
 import '../styles/import.css';
 
 const { Title, Text } = Typography;
@@ -459,6 +460,53 @@ const Import = () => {
   const [importResult, setImportResult] = useState(null);
   const [executing, setExecuting] = useState(false);
 
+  // ИИ-Ассистент состояния
+  const [aiDrawerVisible, setAiDrawerVisible] = useState(false);
+  const [chatMessages, setChatMessages] = useState([
+    {
+      sender: 'ai',
+      text: 'Привет! Я ИИ-ассистент по импорту данных. Загрузите файл Excel, и я помогу вам сопоставить колонки, проверить корректность данных и быстро решить конфликты дубликатов в базе данных.',
+      time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+    }
+  ]);
+  const [inputValue, setInputValue] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const chatEndRef = useRef(null);
+
+  // Автоматические реплики ИИ в зависимости от шага
+  useEffect(() => {
+    let text = '';
+    if (step === 0) {
+      if (!file) {
+        text = 'Пожалуйста, выберите тип данных (например, Продукты) и перетащите ваш Excel-файл в зону загрузки.';
+      } else {
+        text = `Отличный выбор! Вы загрузили файл «${file.name}». Теперь нажмите кнопку «Далее» внизу экрана, чтобы перейти к сопоставлению колонок.`;
+      }
+    } else if (step === 1) {
+      text = 'Мы на этапе сопоставления колонок. У меня есть готовая рекомендация по маппингу! Нажмите кнопку «Применить ИИ-рекомендации» ниже в чате, чтобы я настроил поля автоматически.';
+    } else if (step === 2) {
+      text = 'Пожалуйста, ознакомьтесь с предпросмотром данных. Все ли значения колонок встали на свои места? Если всё верно, нажимайте «Далее» для запуска ИИ-анализа и сверки с базой данных.';
+    } else if (step === 3) {
+      text = 'Я проверил данные файла на совпадения в базе данных. Обнаружено несколько пересечений. Нажмите кнопку «Решить конфликты через ИИ», чтобы применить оптимальную стратегию для каждой строки.';
+    } else if (step === 4) {
+      text = 'Импорт полностью завершен! Данные успешно записаны в PostgreSQL. Отчет о результатах отображен на экране.';
+    }
+
+    if (text) {
+      setChatMessages(prev => [...prev, {
+        sender: 'ai',
+        text,
+        time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+      }]);
+    }
+  }, [step, file]);
+
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages, isTyping]);
+
   // ── Fetch available entities on mount ──
   useEffect(() => {
     const loadEntities = async () => {
@@ -595,6 +643,202 @@ const Import = () => {
     setImportResult(null);
   };
 
+  // ── AI actions ──
+  const handleApplyAIMapping = async () => {
+    if (!metadata || !headers.length) return;
+    setIsTyping(true);
+
+    try {
+      const systemInstruction = `
+You are an AI data migration assistant.
+Your task is to map Excel headers from an uploaded file to database entity fields.
+
+Excel headers: [${headers.join(', ')}]
+Target database fields:
+${JSON.stringify(metadata.fields, null, 2)}
+
+Determine the best semantic mapping. For each target field, choose a matching Excel header or leave it unmapped.
+You MUST respond ONLY with a JSON object in this format:
+\`\`\`json
+{
+  "mapping": {
+    "field_name_1": "Excel Header Name A",
+    "field_name_2": "Excel Header Name B"
+  },
+  "explanation": "Brief explanation in Russian detailing your mapping logic."
+}
+\`\`\`
+Do not write any other explanation besides this JSON block.
+`;
+      const resText = await askGemini(
+        `Сопоставь поля сущности с колонками Excel.`,
+        systemInstruction
+      );
+      const parsed = parseJsonFromText(resText);
+      
+      if (parsed.mapping) {
+        setMapping(parsed.mapping);
+      }
+
+      setChatMessages(prev => [...prev, {
+        sender: 'ai',
+        text: `🧙‍♂️ **ИИ-Рекомендация по маппингу применена!**\n\n${parsed.explanation || 'Колонки сопоставлены.'}\n\nПожалуйста, перепроверьте настройки на экране и нажмите «Далее» для предпросмотра данных.`,
+        time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+      }]);
+      notification.success({ message: 'ИИ-сопоставление выполнено', description: 'Заголовки сопоставлены на основе семантического анализа.' });
+    } catch (err) {
+      console.error("Gemini mapping error:", err);
+      const fb = runFallbackMapping();
+      setMapping(fb.auto);
+      setChatMessages(prev => [...prev, {
+        sender: 'ai',
+        text: `⚠️ Ошибка ИИ-сервера: ${err.message || err}. Переключено на локальный эмулятор.\n\n🧙‍♂️ **Рекомендация эмулятора:**\n\n${fb.explanation}\n\nПожалуйста, перепроверьте настройки на экране.`,
+        time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+      }]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  const runFallbackMapping = () => {
+    const auto = autoMap(metadata.fields, headers);
+    const explanation = metadata.fields.map(f => {
+      if (auto[f.name]) {
+        return `• Поле **«${f.label || f.name}»** сопоставлено с колонкой **«${auto[f.name]}»** (высокая схожесть)`;
+      }
+      return `• Поле **«${f.label || f.name}»** не сопоставлено (совпадений не найдено)`;
+    }).join('\n');
+    return { auto, explanation };
+  };
+
+  const handleResolveAIConflicts = async () => {
+    if (!analysisReport || !analysisReport.conflicts.length) return;
+    setIsTyping(true);
+
+    try {
+      const systemInstruction = `
+You are an AI database administrator.
+We have conflicts between database records and Excel rows being imported.
+Your task is to decide whether to UPDATE each database record with the Excel data or SKIP the Excel row to resolve the conflict.
+
+Business Rules:
+1. If the price in the incoming file is inflated/higher by more than 15% compared to the database record, choose SKIP to prevent buying at overpriced rates.
+2. Otherwise, update the record with the new incoming data (choose UPDATE).
+
+Here are the conflicts:
+${JSON.stringify(analysisReport.conflicts.map(c => ({
+  row: c.row,
+  entity: c.entity,
+  incoming: c.incoming
+})), null, 2)}
+
+You MUST respond ONLY with a JSON object in this format:
+\`\`\`json
+{
+  "resolutions": {
+    "row_number_1": "UPDATE",
+    "row_number_2": "SKIP"
+  },
+  "explanation": "Detailed summary in Russian explaining which records were skipped due to high prices and which were updated safely."
+}
+\`\`\`
+Do not write any other explanation besides this JSON block.
+`;
+
+      const resText = await askGemini(
+        `Разреши конфликты дубликатов по бизнес-правилам.`,
+        systemInstruction
+      );
+      const parsed = parseJsonFromText(resText);
+      
+      if (parsed.resolutions) {
+        setResolutions(parsed.resolutions);
+      }
+
+      setChatMessages(prev => [...prev, {
+        sender: 'ai',
+        text: `🛡 **Конфликты автоматически разрешены через Gemini!**\n\n${parsed.explanation || 'Все конфликты обработаны.'}\n\nТеперь нажмите «Выполнить импорт» для внесения данных в базу данных.`,
+        time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+      }]);
+      notification.success({ message: 'Конфликты разрешены через ИИ', description: 'Решения применены на основе анализа цен.' });
+    } catch (err) {
+      console.error("Gemini conflicts error:", err);
+      const fb = runFallbackResolveConflicts();
+      setResolutions(fb.resMap);
+      setChatMessages(prev => [...prev, {
+        sender: 'ai',
+        text: `⚠️ Ошибка ИИ-сервера: ${err.message || err}. Переключено на локальный эмулятор.\n\n🛡 **Рекомендация эмулятора:**\n• **Пропущено записей:** ${fb.skipCount} (подозрение на завышенные цены)\n• **Обновлено записей:** ${fb.updateCount} (безопасные изменения)\n\nТеперь нажмите «Выполнить импорт».`,
+        time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+      }]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  const runFallbackResolveConflicts = () => {
+    const resMap = {};
+    let skipCount = 0;
+    let updateCount = 0;
+
+    analysisReport.conflicts.forEach(c => {
+      const dbPrice = c.entity?.price || 0;
+      const filePrice = c.incoming?.price || 0;
+
+      if (filePrice > dbPrice * 1.15) {
+        resMap[c.row] = 'SKIP';
+        skipCount++;
+      } else {
+        resMap[c.row] = 'UPDATE';
+        updateCount++;
+      }
+    });
+    return { resMap, skipCount, updateCount };
+  };
+
+  const handleSendChat = () => {
+    if (!inputValue.trim()) return;
+    const prompt = inputValue;
+    setChatMessages(prev => [...prev, {
+      sender: 'user',
+      text: prompt,
+      time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+    }]);
+    setInputValue('');
+    setIsTyping(true);
+
+    setTimeout(() => {
+      setIsTyping(false);
+      let responseText = '';
+      const text = prompt.toLowerCase();
+
+      if (text.includes('сопостав') || text.includes('маппинг') || text.includes('настро')) {
+        if (step === 1) {
+          handleApplyAIMapping();
+          return;
+        } else {
+          responseText = 'Сопоставление колонок доступно только на Шаге 2 (Маппинг колонок). Пожалуйста, загрузите файл и перейдите на этот шаг.';
+        }
+      } else if (text.includes('конфликт') || text.includes('дубликат') || text.includes('реш')) {
+        if (step === 3) {
+          handleResolveAIConflicts();
+          return;
+        } else {
+          responseText = 'Разрешение конфликтов и ИИ-анализ доступны только на Шаге 4 (Анализ).';
+        }
+      } else if (text.includes('ошибка') || text.includes('почему')) {
+        responseText = 'Я проверяю типы данных в ячейках на соответствие системным полям (числа, строки, даты) и сопоставляю ключевые индексы. Если колонка пуста или содержит неверный формат — я подсвечу ее красным цветом.';
+      } else {
+        responseText = 'Я могу помочь вам с авто-маппингом колонок (скажите "сопоставь колонки") или с разрешением конфликтов на шаге анализа (скажите "реши конфликты"). Что именно сделать?';
+      }
+
+      setChatMessages(prev => [...prev, {
+        sender: 'ai',
+        text: responseText,
+        time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+      }]);
+    }, 1000);
+  };
+
   // ── Steps config ──
   const stepsConfig = [
     { title: 'Загрузка файла' },
@@ -606,7 +850,22 @@ const Import = () => {
 
   return (
     <div>
-      <Title level={2} className="agro-page-title">Импорт данных из Excel</Title>
+      <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
+        <Col>
+          <Title level={2} className="agro-page-title" style={{ marginBottom: 0 }}>Импорт данных из Excel</Title>
+        </Col>
+        <Col>
+          <Button 
+            type="default" 
+            size="large"
+            icon={<RobotOutlined style={{ color: '#1677ff' }} />} 
+            onClick={() => setAiDrawerVisible(true)}
+            style={{ borderRadius: 8, display: 'flex', alignItems: 'center', fontWeight: '500' }}
+          >
+            Спросить ИИ-ассистента
+          </Button>
+        </Col>
+      </Row>
 
       <div className="agro-card import-wizard">
         <Steps
@@ -664,6 +923,107 @@ const Import = () => {
           </div>
         )}
       </div>
+
+      {/* AI Assistant Chat Drawer */}
+      <Drawer
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingRight: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #1677ff 0%, #52c41a 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                <RobotOutlined style={{ color: '#fff', fontSize: 16 }} />
+              </div>
+              <div>
+                <Text strong style={{ fontSize: 14 }}>ИИ-Ассистент по импорту</Text>
+                <Badge status="processing" text={<span style={{ fontSize: 10, color: '#8c8c8c' }}>Онлайн (Gemini на сервере)</span>} style={{ display: 'block', transform: 'translateY(-2px)' }} />
+              </div>
+            </div>
+          </div>
+        }
+        placement="right"
+        width={380}
+        onClose={() => setAiDrawerVisible(false)}
+        open={aiDrawerVisible}
+        bodyStyle={{ display: 'flex', flexDirection: 'column', padding: '16px 20px' }}
+      >
+
+        {/* Chat message feed */}
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16, paddingRight: 4 }}>
+          {chatMessages.map((msg, index) => (
+            <div key={index} style={{
+              alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+              maxWidth: '85%',
+              background: msg.sender === 'user' ? '#1677ff' : '#f5f5f5',
+              color: msg.sender === 'user' ? '#fff' : '#262626',
+              borderRadius: msg.sender === 'user' ? '12px 12px 0 12px' : '12px 12px 12px 0',
+              padding: '10px 14px',
+              boxShadow: '0 2px 5px rgba(0,0,0,0.03)'
+            }}>
+              <div style={{ fontSize: 13, whiteSpace: 'pre-line' }}>{msg.text}</div>
+              <div style={{ fontSize: 9, color: msg.sender === 'user' ? '#e6f7ff' : '#8c8c8c', textAlign: 'right', marginTop: 4 }}>{msg.time}</div>
+            </div>
+          ))}
+          {isTyping && (
+            <div style={{ alignSelf: 'flex-start', background: '#f5f5f5', borderRadius: '12px 12px 12px 0', padding: '12px 16px', display: 'flex', alignItems: 'center' }}>
+              <Spin size="small" style={{ marginRight: 8 }} />
+              <Text type="secondary" style={{ fontSize: 12 }}>ИИ печатает...</Text>
+            </div>
+          )}
+          <div ref={chatEndRef} />
+        </div>
+
+        {/* AI Action triggers for current step */}
+        {step === 1 && (
+          <div style={{ padding: 12, background: '#e6f7ff', border: '1px solid #91d5ff', borderRadius: 8, marginBottom: 12 }}>
+            <Text strong style={{ fontSize: 12, display: 'block', marginBottom: 8 }}><ThunderboltOutlined style={{ color: '#1890ff' }} /> Быстрое действие ИИ:</Text>
+            <Button 
+              type="primary" 
+              size="middle" 
+              block 
+              icon={<ThunderboltOutlined />} 
+              onClick={handleApplyAIMapping}
+              disabled={isTyping}
+            >
+              Применить ИИ-рекомендации
+            </Button>
+          </div>
+        )}
+
+        {step === 3 && analysisReport && analysisReport.conflicts.length > 0 && (
+          <div style={{ padding: 12, background: '#fff7e6', border: '1px solid #ffd591', borderRadius: 8, marginBottom: 12 }}>
+            <Text strong style={{ fontSize: 12, display: 'block', marginBottom: 8 }}><WarningOutlined style={{ color: '#fa8c16' }} /> Конфликты в данных:</Text>
+            <Button 
+              type="primary" 
+              danger
+              size="middle" 
+              block 
+              icon={<ThunderboltOutlined />} 
+              onClick={handleResolveAIConflicts}
+              disabled={isTyping}
+            >
+              Решить конфликты через ИИ
+            </Button>
+          </div>
+        )}
+
+        {/* Chat input */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Input
+            placeholder="Задать вопрос ассистенту..."
+            value={inputValue}
+            onChange={e => setInputValue(e.target.value)}
+            onPressEnter={handleSendChat}
+            disabled={isTyping}
+            size="large"
+          />
+          <Button
+            type="primary"
+            icon={<SendOutlined />}
+            onClick={handleSendChat}
+            disabled={isTyping || !inputValue.trim()}
+            size="large"
+          />
+        </div>
+      </Drawer>
     </div>
   );
 };

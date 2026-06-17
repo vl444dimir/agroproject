@@ -2,7 +2,7 @@ import axios from 'axios';
 import { notification } from 'antd';
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001',
+  baseURL: import.meta.env.VITE_JSON_SERVER_URL || 'http://localhost:3001',
   headers: {
     'Content-Type': 'application/json'
   },

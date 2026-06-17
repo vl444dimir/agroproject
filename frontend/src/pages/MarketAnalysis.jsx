@@ -816,7 +816,7 @@ const MarketAnalysis = () => {
               <Card className="agro-card" bordered={false} style={{ background: 'linear-gradient(135deg, #f6ffed 0%, #e6f7ff 100%)' }}>
                 <Statistic
                   title={<Text strong type="secondary">Объем продаж (ЭСФ)</Text>}
-                  value={stats.totalImports > 0 ? stats.totalSales : 0}
+                  value={stats.totalSales}
                   suffix="т/л"
                   prefix={<BarChartOutlined style={{ color: '#1a7c3e' }} />}
                   valueStyle={{ color: '#1a7c3e', fontWeight: 'bold' }}
