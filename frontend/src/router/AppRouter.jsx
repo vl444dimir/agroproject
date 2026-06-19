@@ -64,6 +64,7 @@ const AppRouter = () => {
           <Route path="references" element={<References />} />
           <Route path="documents" element={<Documents />} />
           <Route path="reporting" element={<Reporting />} />
+          <Route path="subsidies" element={<Subsidies />} />
           <Route path="products" element={<Products />} />
           <Route path="import" element={<Import />} />
           <Route path="livestock" element={<LivestockTracking />} />

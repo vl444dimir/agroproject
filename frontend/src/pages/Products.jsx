@@ -74,6 +74,21 @@ const Products = () => {
     }
   };
 
+  const handleShowAnalogues = async (record) => {
+    setAnalogProduct(record);
+    setAnalogues([]);
+    setAnalogModalVisible(true);
+    setAnalogLoading(true);
+    try {
+      const res = await productsApi.getAnalogues(record.id);
+      setAnalogues(res.data || []);
+    } catch {
+      setAnalogues([]);
+    } finally {
+      setAnalogLoading(false);
+    }
+  };
+
   const handleDelete = (id) => {
     Modal.confirm({
       title: 'Удаление продукта',
@@ -139,9 +154,12 @@ const Products = () => {
       cols.push({
         title: 'Действия',
         key: 'actions',
-        width: 120,
+        width: 200,
         render: (_, record) => (
           <Space>
+            <Button size="small" icon={<ExperimentOutlined />} onClick={() => handleShowAnalogues(record)}>
+              Аналоги
+            </Button>
             <Button size="small" icon={<EditOutlined />} onClick={() => openModal(record)} />
             {role === 'admin' && (
                <Button size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} />

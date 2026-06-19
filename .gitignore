@@ -1,0 +1,16 @@
+node_modules/
+frontend/dist/
+AGENTS.md
+frontend/node_modules/
+backend/.gradle/
+backend/build/
+backend/bin/
+backend/build_output.txt
+*.log
+.env
+.env.local
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db

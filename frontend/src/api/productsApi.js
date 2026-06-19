@@ -6,4 +6,5 @@ export const productsApi = {
   createProduct: (product) => backendClient.post('/products', product),
   updateProduct: (id, product) => backendClient.put(`/products/${id}`, product),
   deleteProduct: (id) => backendClient.delete(`/products/${id}`),
+  getAnalogues: (id, params = {}) => backendClient.get(`/products/${id}/analogues`, { params }),
 };

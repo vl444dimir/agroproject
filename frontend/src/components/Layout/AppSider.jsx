@@ -34,7 +34,17 @@ const AppSider = () => {
       {
         key: '/reports',
         icon: <FileTextOutlined />,
-        label: 'Отчёты и аналитика',
+        label: 'Субсидии и отчёты',
+      },
+      {
+        key: '/subsidies',
+        icon: <DollarOutlined />,
+        label: 'Заявки на субсидии',
+      },
+      {
+        key: '/harvest',
+        icon: <RiseOutlined />,
+        label: 'Учёт урожая',
       },
       {
         key: '/market-analysis',
@@ -67,7 +77,12 @@ const AppSider = () => {
       items.push({
         key: '/products',
         icon: <AppstoreAddOutlined />,
-        label: 'Продукты (Бэкэнд)',
+        label: 'Реестр препаратов',
+      });
+      items.push({
+        key: '/backend-refs',
+        icon: <DatabaseOutlined />,
+        label: 'Справочники бэкенда',
       });
       // items.push({
       //   key: '/documents',
@@ -77,6 +92,11 @@ const AppSider = () => {
       items.push({
         key: '/import',
         icon: <UploadOutlined />,
+        label: 'Импорт из Excel',
+      });
+      items.push({
+        key: '/import',
+        icon: <ImportOutlined />,
         label: 'Импорт из Excel',
       });
     }

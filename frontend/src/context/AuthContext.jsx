@@ -28,7 +28,25 @@ export const AuthProvider = ({ children }) => {
     const savedUser = localStorage.getItem('agro_user');
     const token = localStorage.getItem('token');
     if (savedUser && token) {
-      setUser(JSON.parse(savedUser));
+      const parsed = JSON.parse(savedUser);
+      setUser(parsed);
+      backendClient.get('/auth/me').then(meRes => {
+        const me = meRes.data;
+        const freshUser = {
+          login: me.username || me.login || parsed.login,
+          role: me.role || me.authorities?.[0]?.authority?.replace('ROLE_', '')?.toLowerCase() || parsed.role,
+          name: me.name || me.username || parsed.name,
+          id: me.id || parsed.id,
+          organizationId: me.organizationId || parsed.organizationId,
+          organizationName: me.organizationName || parsed.organizationName,
+        };
+        setUser(freshUser);
+        localStorage.setItem('agro_user', JSON.stringify(freshUser));
+      }).catch(() => {
+        localStorage.removeItem('agro_user');
+        localStorage.removeItem('token');
+        setUser(null);
+      });
     } else {
       localStorage.removeItem('agro_user');
       localStorage.removeItem('token');
