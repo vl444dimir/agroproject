@@ -10,14 +10,13 @@ import {
   ContainerOutlined,
   AuditOutlined,
   AppstoreAddOutlined,
-  DatabaseOutlined,
+  UploadOutlined,
   RiseOutlined,
-  DollarOutlined,
-  ImportOutlined
+  StockOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../context/AuthContext';
 
-const { Sider } = Layout;
+const Sider = Layout.Sider;
 
 const AppSider = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -48,6 +47,11 @@ const AppSider = () => {
         label: 'Учёт урожая',
       },
       {
+        key: '/market-analysis',
+        icon: <RiseOutlined />,
+        label: 'Анализ рынка сбыта',
+      },
+      {
         key: '/calculator',
         icon: <CalculatorOutlined />,
         label: 'Онлайн-калькулятор',
@@ -62,6 +66,11 @@ const AppSider = () => {
         icon: <ContainerOutlined />,
         label: 'Формирование отчетов',
       },
+      {
+        key: '/livestock',
+        icon: <StockOutlined />,
+        label: 'Поголовье скота',
+      },
     ];
 
     if (role === 'employee' || role === 'admin' || role === 'staff') {
@@ -75,10 +84,15 @@ const AppSider = () => {
         icon: <DatabaseOutlined />,
         label: 'Справочники бэкенда',
       });
+      // items.push({
+      //   key: '/documents',
+      //   icon: <FolderOutlined />,
+      //   label: 'Управление документами',
+      // });
       items.push({
-        key: '/documents',
-        icon: <FolderOutlined />,
-        label: 'Управление документами',
+        key: '/import',
+        icon: <UploadOutlined />,
+        label: 'Импорт из Excel',
       });
       items.push({
         key: '/import',

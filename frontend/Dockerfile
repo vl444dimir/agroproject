@@ -1,5 +1,5 @@
 # Стейдж 1: Сборка приложения
-FROM node:18-alpine AS builder
+FROM --platform=linux/amd64 node:22 AS builder
 
 WORKDIR /app
 
@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 
 # Устанавливаем зависимости
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # Копируем исходный код
 COPY . .
@@ -20,7 +20,7 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN npm run build
 
 # Стейдж 2: Nginx сервер для статических файлов
-FROM nginx:alpine
+FROM --platform=linux/amd64 nginx:1.25
 
 # Удаляем дефолтные статические файлы Nginx
 RUN rm -rf /usr/share/nginx/html/*

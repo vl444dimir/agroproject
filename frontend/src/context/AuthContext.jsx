@@ -1,6 +1,21 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import backendClient from '../api/backendClient';
-import { MOCK_AUDIT_LOG } from '../mock';
+import { 
+  initAPI,
+  MOCK_USERS, 
+  MOCK_KPI, 
+  MOCK_TOP_FERTILIZERS, 
+  MOCK_TOP_PESTICIDES, 
+  MOCK_REPORTS, 
+  MOCK_FERTILIZERS_REF, 
+  MOCK_PESTICIDES_REF, 
+  MOCK_DOCUMENTS, 
+  MOCK_SUPPLY_CHAIN, 
+  MOCK_AUDIT_LOG, 
+  MOCK_NOTIFICATIONS, 
+  CALC_NORMS, 
+  MOCK_MAP_DISTRICTS 
+} from '../mock';
 import { auditApi } from '../api';
 
 const AuthContext = createContext();
@@ -39,28 +54,28 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (username, password) => {
+    const login = async (username, password) => {
     try {
       const response = await backendClient.post('/auth/login', { username, password });
       const { token } = response.data;
       
       localStorage.setItem('token', token);
       
-      let sessionUser;
-      try {
-        const meRes = await backendClient.get('/auth/me');
-        sessionUser = meRes.data;
-        sessionUser = {
-          login: sessionUser.username || sessionUser.login || username,
-          role: sessionUser.role || sessionUser.authorities?.[0]?.authority?.replace('ROLE_', '')?.toLowerCase() || 'user',
-          name: sessionUser.name || sessionUser.username || username,
-          id: sessionUser.id,
-          organizationId: sessionUser.organizationId,
-          organizationName: sessionUser.organizationName,
-        };
-      } catch {
-        sessionUser = { login: username, role: 'admin', name: username };
-      }
+      // Fetch actual user profile and role from backend
+      const meResponse = await backendClient.get('/auth/me');
+      const userProfile = meResponse.data;
+      
+      const sessionUser = { 
+        id: userProfile.id,
+        login: userProfile.username, 
+        role: userProfile.role.replace('ROLE_', '').toLowerCase(), 
+        name: userProfile.username,
+        organizationId: userProfile.organizationId,
+        organizationName: userProfile.organizationName
+      }; 
+      
+      // Re-run initAPI so all global tables and KPIs are fetched using the valid token
+      await initAPI();
       
       setUser(sessionUser);
       localStorage.setItem('agro_user', JSON.stringify(sessionUser));
@@ -127,6 +142,25 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     localStorage.removeItem('agro_user');
     localStorage.removeItem('token');
+    
+    // Clear all mock/fetched global lists to ensure clean session state
+    MOCK_USERS.length = 0;
+    MOCK_KPI.landArea = '';
+    MOCK_KPI.sownArea = '';
+    MOCK_KPI.harvest = '';
+    MOCK_KPI.fertilizers = '';
+    MOCK_KPI.pesticides = '';
+    MOCK_KPI.subsidies = '';
+    MOCK_TOP_FERTILIZERS.length = 0;
+    MOCK_TOP_PESTICIDES.length = 0;
+    MOCK_REPORTS.length = 0;
+    MOCK_FERTILIZERS_REF.length = 0;
+    MOCK_PESTICIDES_REF.length = 0;
+    MOCK_DOCUMENTS.length = 0;
+    MOCK_SUPPLY_CHAIN.length = 0;
+    MOCK_NOTIFICATIONS.length = 0;
+    Object.keys(CALC_NORMS).forEach(key => delete CALC_NORMS[key]);
+    MOCK_MAP_DISTRICTS.length = 0;
   };
 
   return (

@@ -2,7 +2,7 @@ import axios from 'axios';
 import { notification } from 'antd';
 
 const backendClient = axios.create({
-  baseURL: '/api/v1',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1',
   headers: {
     'Content-Type': 'application/json'
   },
@@ -35,6 +35,10 @@ backendClient.interceptors.response.use(
         // Clear invalid token
         localStorage.removeItem('token');
         localStorage.removeItem('agro_user');
+        // Force redirect to login to clear React state and allow a clean login
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
       } else if (status === 403) {
         description = 'Недостаточно прав для выполнения действия.';
       } else if (status === 500) {

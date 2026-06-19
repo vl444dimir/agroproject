@@ -84,9 +84,7 @@ const AppHeader = () => {
     <>
       <Header className="agro-header">
         <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => navigate('/')}>
-          <Text strong style={{ fontSize: 18, margin: 0 }}>
-            <span style={{ color: '#1a7c3e' }}>Dala</span>Info
-          </Text>
+          <Text strong style={{ fontSize: 18, margin: 0 }}>DALAINFO</Text>
         </div>
 
         <Space size="large">

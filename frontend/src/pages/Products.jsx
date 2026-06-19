@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Typography, Table, Button, Input, Modal, Form, Space, InputNumber, notification, Row, Tag } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined, SearchOutlined, ExperimentOutlined } from '@ant-design/icons';
+import { Typography, Table, Button, Input, Modal, Form, Space, InputNumber, notification, Row, Spin, Descriptions, Tag } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined, SearchOutlined } from '@ant-design/icons';
 import { useAuth } from '../context/AuthContext';
 import { productsApi } from '../api/productsApi';
 
@@ -17,10 +17,19 @@ const Products = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [form] = Form.useForm();
 
-  const [analogModalVisible, setAnalogModalVisible] = useState(false);
-  const [analogProduct, setAnalogProduct] = useState(null);
-  const [analogues, setAnalogues] = useState([]);
-  const [analogLoading, setAnalogLoading] = useState(false);
+  // State for viewing product details modal
+  const [viewModalVisible, setViewModalVisible] = useState(false);
+  const [viewingProduct, setViewingProduct] = useState(null);
+  const [viewLoading, setViewLoading] = useState(false);
+
+  // States for table page tracking to compute overall row indices
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Reset page to 1 when search text changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchText]);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -100,10 +109,42 @@ const Products = () => {
     });
   };
 
+  const handleView = async (record) => {
+    setViewLoading(true);
+    setViewingProduct(null);
+    setViewModalVisible(true);
+    try {
+      const response = await productsApi.getProductById(record.id);
+      setViewingProduct(response.data);
+    } catch (err) {
+      notification.error({ message: 'Ошибка при загрузке деталей продукта' });
+      setViewModalVisible(false);
+    } finally {
+      setViewLoading(false);
+    }
+  };
+
   const getColumns = () => {
     const cols = [
-      { title: 'ID', dataIndex: 'id', key: 'id', width: 60 },
-      { title: 'Название', dataIndex: 'name', key: 'name' },
+      { 
+        title: '№', 
+        key: 'index', 
+        width: 60, 
+        render: (_, __, index) => (currentPage - 1) * pageSize + index + 1 
+      },
+      { 
+        title: 'Название', 
+        dataIndex: 'name', 
+        key: 'name',
+        render: (text, record) => (
+          <span 
+            className="product-name-link"
+            onClick={() => handleView(record)}
+          >
+            {text}
+          </span>
+        )
+      },
       { title: 'Описание', dataIndex: 'description', key: 'description' },
       { title: 'Цена (₸)', dataIndex: 'price', key: 'price', render: p => p?.toLocaleString('ru-RU') },
       { title: 'Количество', dataIndex: 'quantity', key: 'quantity' },
@@ -163,6 +204,15 @@ const Products = () => {
           loading={loading}
           locale={{ emptyText: 'Нет данных' }}
           rowClassName={(r, i) => i % 2 === 0 ? 'table-row-light' : 'table-row-dark'}
+          pagination={{
+            current: currentPage,
+            pageSize: pageSize,
+            showSizeChanger: true,
+            onChange: (page, size) => {
+              setCurrentPage(page);
+              setPageSize(size);
+            }
+          }}
         />
       </div>
 
@@ -192,34 +242,68 @@ const Products = () => {
       </Modal>
 
       <Modal
-        title={analogProduct ? `Аналоги для: ${analogProduct.name}` : 'Аналоги'}
-        open={analogModalVisible}
-        onCancel={() => { setAnalogModalVisible(false); setAnalogues([]); }}
-        footer={null}
+        title="Информация о препарате"
+        open={viewModalVisible}
+        onCancel={() => setViewModalVisible(false)}
+        footer={[
+          <Button key="close" type="primary" onClick={() => setViewModalVisible(false)}>
+            Закрыть
+          </Button>
+        ]}
         width={700}
-        destroyOnClose
       >
-        {analogLoading ? (
-          <div style={{ textAlign: 'center', padding: 40 }}>Загрузка аналогов...</div>
-        ) : analogues.length > 0 ? (
-          <Table
-            dataSource={analogues.map((a, i) => ({ ...a, key: i }))}
-            columns={[
-              { title: 'Название', dataIndex: 'name', key: 'name' },
-              { title: 'Описание', dataIndex: 'description', key: 'description', ellipsis: true },
-              { title: 'Цена (₸)', dataIndex: 'price', key: 'price', render: p => p?.toLocaleString('ru-RU') || '—' },
-              { title: 'Категория', dataIndex: 'categoryName', key: 'categoryName', render: v => v ? <Tag>{v}</Tag> : '—' },
-            ]}
-            size="middle"
-            pagination={false}
-            locale={{ emptyText: 'Нет данных' }}
-          />
-        ) : (
-          <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
-            Аналоги для данного продукта не найдены
+        {viewLoading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
+            <Spin size="large" />
           </div>
+        ) : viewingProduct ? (
+          <div>
+            <Title level={3} style={{ marginTop: 0, color: '#1a7c3e', marginBottom: 20 }}>
+              {viewingProduct.name}
+            </Title>
+            <Descriptions bordered column={1} size="middle" labelStyle={{ width: '35%', fontWeight: '600', backgroundColor: '#fafafa' }}>
+              <Descriptions.Item label="Категория">{viewingProduct.categoryName || '—'}</Descriptions.Item>
+              <Descriptions.Item label="Производитель">{viewingProduct.manufacturerName || '—'}</Descriptions.Item>
+              <Descriptions.Item label="Препаративная форма">{viewingProduct.formulation || '—'}</Descriptions.Item>
+              <Descriptions.Item label="Норма применения">{viewingProduct.normOfUse || '—'}</Descriptions.Item>
+              <Descriptions.Item label="Вредный объект / Назначение">{viewingProduct.targetObject || '—'}</Descriptions.Item>
+              <Descriptions.Item label="Класс опасности">{viewingProduct.hazardClass || '—'}</Descriptions.Item>
+              <Descriptions.Item label="Дата регистрации">
+                {viewingProduct.registrationDate ? new Date(viewingProduct.registrationDate).toLocaleDateString('ru-RU') : '—'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Действующие вещества">
+                {viewingProduct.ingredients && viewingProduct.ingredients.length > 0 ? (
+                  <Space wrap>
+                    {viewingProduct.ingredients.map((ing, idx) => (
+                      <Tag color="green" key={idx}>
+                        {ing.ingredientName} {ing.concentration ? `(${ing.concentration})` : ''}
+                      </Tag>
+                    ))}
+                  </Space>
+                ) : (
+                  '—'
+                )}
+              </Descriptions.Item>
+              <Descriptions.Item label="Культуры">
+                {viewingProduct.cultureNames && viewingProduct.cultureNames.length > 0 ? (
+                  <Space wrap>
+                    {viewingProduct.cultureNames.map((culture, idx) => (
+                      <Tag color="blue" key={idx}>
+                        {culture}
+                      </Tag>
+                    ))}
+                  </Space>
+                ) : (
+                  '—'
+                )}
+              </Descriptions.Item>
+            </Descriptions>
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', padding: 20 }}>Не удалось загрузить данные</div>
         )}
       </Modal>
+
     </div>
   );
 };

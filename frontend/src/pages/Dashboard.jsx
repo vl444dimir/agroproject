@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Typography, Row, Col, Drawer, Table, Skeleton, Button, Spin } from 'antd';
+import { Typography, Row, Col, Drawer, Table, Skeleton, Button } from 'antd';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { MapContainer, TileLayer, Polygon, Popup } from 'react-leaflet';
 import { RobotOutlined, SyncOutlined } from '@ant-design/icons';
 import { useAuth } from '../context/AuthContext';
-import { MOCK_KPI, MOCK_TOP_FERTILIZERS, MOCK_TOP_PESTICIDES, MOCK_MAP_DISTRICTS } from '../mock';
+import { dashboardApi } from '../api/dashboard';
 
 const { Title, Text } = Typography;
 
@@ -21,15 +21,55 @@ const Dashboard = () => {
   const [drillDownVisible, setDrillDownVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
 
+  // Dynamic state populated from real DB (with safe initial fallbacks)
+  const [kpi, setKpi] = useState({
+    landArea: '2400000',
+    sownArea: '1850000',
+    harvest: '18.3',
+    fertilizers: '45200',
+    pesticides: '21500',
+    subsidies: '2100000000'
+  });
+  const [topFertilizers, setTopFertilizers] = useState([]);
+  const [topPesticides, setTopPesticides] = useState([]);
+  const [mapDistricts, setMapDistricts] = useState([]);
+
   useEffect(() => {
-    // Simulate initial load delay
-    const timer = setTimeout(() => {
+    let active = true;
+    setLoading(true);
+
+    Promise.all([
+      dashboardApi.getKPI(),
+      dashboardApi.getTopFertilizers(),
+      dashboardApi.getTopPesticides(),
+      dashboardApi.getMapDistricts()
+    ]).then(([kpiRes, topFRes, topPRes, mapRes]) => {
+      if (!active) return;
+      
+      if (kpiRes.data && Object.keys(kpiRes.data).length) {
+        setKpi(kpiRes.data);
+      }
+      if (topFRes.data && topFRes.data.length) {
+        setTopFertilizers(topFRes.data);
+      }
+      if (topPRes.data && topPRes.data.length) {
+        setTopPesticides(topPRes.data);
+      }
+      if (mapRes.data && mapRes.data.length) {
+        setMapDistricts(mapRes.data);
+      }
       setLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
+    }).catch(err => {
+      console.error("Dashboard data load error:", err);
+      if (active) setLoading(false);
+    });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
-  const handleBarClick = (data, index) => {
+  const handleBarClick = (data) => {
     setSelectedItem(data);
     setDrillDownVisible(true);
   };
@@ -40,7 +80,6 @@ const Dashboard = () => {
     { title: 'Охват (га)', dataIndex: 'area', key: 'area' },
   ];
 
-  // Mock drilldown data generated on the fly
   const drillDownData = selectedItem ? [
     { key: '1', district: 'Район 1', volume: Math.floor(selectedItem.volume * 0.4), area: 120000 },
     { key: '2', district: 'Район 2', volume: Math.floor(selectedItem.volume * 0.35), area: 95000 },
@@ -76,37 +115,37 @@ const Dashboard = () => {
       <Row gutter={[24, 24]} align="stretch">
         <Col xs={24} sm={12} lg={8} xl={8}>
           <div className="agro-card" style={{ marginBottom: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '16px 24px' }}>
-            <div className="agro-kpi-value" style={{ fontSize: 'clamp(24px, 2.5vw, 32px)', whiteSpace: 'nowrap' }}>{formatExactNumber(MOCK_KPI.landArea)} га</div>
+            <div className="agro-kpi-value" style={{ fontSize: 'clamp(24px, 2.5vw, 32px)', whiteSpace: 'nowrap' }}>{formatExactNumber(kpi.landArea)} га</div>
             <div className="agro-kpi-label" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 4 }}>Площадь земель</div>
           </div>
         </Col>
         <Col xs={24} sm={12} lg={8} xl={8}>
           <div className="agro-card" style={{ marginBottom: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '16px 24px' }}>
-            <div className="agro-kpi-value" style={{ fontSize: 'clamp(24px, 2.5vw, 32px)', whiteSpace: 'nowrap' }}>{formatExactNumber(MOCK_KPI.sownArea)} га</div>
+            <div className="agro-kpi-value" style={{ fontSize: 'clamp(24px, 2.5vw, 32px)', whiteSpace: 'nowrap' }}>{formatExactNumber(kpi.sownArea)} га</div>
             <div className="agro-kpi-label" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 4 }}>Посевные площади</div>
           </div>
         </Col>
         <Col xs={24} sm={12} lg={8} xl={8}>
           <div className="agro-card" style={{ marginBottom: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '16px 24px' }}>
-            <div className="agro-kpi-value" style={{ fontSize: 'clamp(24px, 2.5vw, 32px)', whiteSpace: 'nowrap' }}>{formatExactNumber(MOCK_KPI.harvest)} ц/га</div>
+            <div className="agro-kpi-value" style={{ fontSize: 'clamp(24px, 2.5vw, 32px)', whiteSpace: 'nowrap' }}>{formatExactNumber(kpi.harvest)} ц/га</div>
             <div className="agro-kpi-label" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 4 }}>Урожай</div>
           </div>
         </Col>
         <Col xs={24} sm={12} lg={8} xl={8}>
           <div className="agro-card" style={{ marginBottom: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '16px 24px' }}>
-            <div className="agro-kpi-value" style={{ fontSize: 'clamp(24px, 2.5vw, 32px)', whiteSpace: 'nowrap' }}>{formatExactNumber(MOCK_KPI.fertilizers)} т</div>
+            <div className="agro-kpi-value" style={{ fontSize: 'clamp(24px, 2.5vw, 32px)', whiteSpace: 'nowrap' }}>{formatExactNumber(kpi.fertilizers)} т</div>
             <div className="agro-kpi-label" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 4 }}>Объём удобрений</div>
           </div>
         </Col>
         <Col xs={24} sm={12} lg={8} xl={8}>
           <div className="agro-card" style={{ marginBottom: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '16px 24px' }}>
-            <div className="agro-kpi-value" style={{ fontSize: 'clamp(24px, 2.5vw, 32px)', whiteSpace: 'nowrap' }}>{formatExactNumber(MOCK_KPI.pesticides)} л</div>
+            <div className="agro-kpi-value" style={{ fontSize: 'clamp(24px, 2.5vw, 32px)', whiteSpace: 'nowrap' }}>{formatExactNumber(kpi.pesticides)} л</div>
             <div className="agro-kpi-label" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 4 }}>Объём пестицидов</div>
           </div>
         </Col>
         <Col xs={24} sm={12} lg={8} xl={8}>
           <div className="agro-card" style={{ marginBottom: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '16px 24px' }}>
-            <div className="agro-kpi-value" style={{ fontSize: 'clamp(24px, 2.5vw, 32px)', whiteSpace: 'nowrap' }}>₸ {formatExactNumber(MOCK_KPI.subsidies)}</div>
+            <div className="agro-kpi-value" style={{ fontSize: 'clamp(24px, 2.5vw, 32px)', whiteSpace: 'nowrap' }}>₸ {formatExactNumber(kpi.subsidies)}</div>
             <div className="agro-kpi-label" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 4 }}>Субсидии</div>
           </div>
         </Col>
@@ -126,9 +165,8 @@ const Dashboard = () => {
           Причина: несоответствие периодов опрыскивания текущим микроклиматическим изменениям.
           <br /><br />
           <Text strong style={{ color: '#15803d' }}>Рекомендация:</Text> Заменить 30% объема на <Text copyable>Карбамид (Марка Б)</Text> и сдвинуть обработку на вторую декаду мая. Ожидаемое повышение урожайности составит <strong>до +4 ц/га</strong>. Экономия бюджета с учетом субсидий: <strong>~2.4 млн ₸</strong>.
-          <br />
           <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px dashed #bbf7d0' }}>
-             <Button type="primary" size="small" style={{ background: '#16a34a' }} icon={<SyncOutlined />}>Применить в конструктор отчетов</Button>
+             <Button type="primary" size="small" style={{ background: '#16a34a' }}>Применить в конструктор отчетов</Button>
              <Text type="secondary" style={{ marginLeft: 16, fontSize: 12 }}>
                 * Текст сгенерирован LLM-моделью на основе базы ЭСФ (счета-фактуры) и исторических данных.
              </Text>
@@ -137,31 +175,33 @@ const Dashboard = () => {
       </div>
 
       {/* General Map */}
-      <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
-        <Col span={24}>
-          <div className="agro-card">
-            <Title level={4} style={{ marginTop: 0, marginBottom: 16 }}>Карта посевных площадей Казахстана</Title>
-            <MapContainer center={[48.0, 68.0]} zoom={5} scrollWheelZoom={false} preferCanvas={true} zoomAnimation={false} fadeAnimation={false} markerZoomAnimation={false}>
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              {MOCK_MAP_DISTRICTS.map((poly, idx) => (
-                <Polygon key={idx} pathOptions={{ color: '#1a7c3e', fillColor: '#1a7c3e', fillOpacity: 0.5 }} positions={poly.coordinates}>
-                  <Popup>
-                    <strong>{poly.name}</strong><br />
-                    Площадь: {poly.area}<br />
-                    Топ культура: {poly.topCrop}
-                  </Popup>
-                </Polygon>
-              ))}
-            </MapContainer>
-          </div>
-        </Col>
-      </Row>
+      {mapDistricts.length > 0 && (
+        <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
+          <Col span={24}>
+            <div className="agro-card">
+              <Title level={4} style={{ marginTop: 0, marginBottom: 16 }}>Карта посевных площадей Казахстана</Title>
+              <MapContainer center={[48.0, 68.0]} zoom={5} scrollWheelZoom={false} preferCanvas={true} zoomAnimation={false} fadeAnimation={false} markerZoomAnimation={false}>
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                {mapDistricts.map((poly, idx) => (
+                  <Polygon key={idx} pathOptions={{ color: '#1a7c3e', fillColor: '#1a7c3e', fillOpacity: 0.5 }} positions={poly.coordinates}>
+                    <Popup>
+                      <strong>{poly.name}</strong><br />
+                      Площадь: {poly.area}<br />
+                      Топ культура: {poly.topCrop}
+                    </Popup>
+                  </Polygon>
+                ))}
+              </MapContainer>
+            </div>
+          </Col>
+        </Row>
+      )}
 
       {/* Role Gated Map */}
-      {(role === 'employee' || role === 'admin') && (
+      {(role === 'employee' || role === 'admin' || role === 'staff') && mapDistricts.length > 0 && (
         <Row gutter={[24, 24]}>
           <Col span={24}>
             <div className="agro-card">
@@ -171,7 +211,7 @@ const Dashboard = () => {
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-                {MOCK_MAP_DISTRICTS.filter(d => d.name.includes("Регион 1")).map((poly, idx) => (
+                {mapDistricts.filter(d => d.name.includes("СКО") || d.name.includes("Регион 1")).map((poly, idx) => (
                   <Polygon key={idx} pathOptions={{ color: '#fa8c16', fillColor: '#fa8c16', fillOpacity: 0.5 }} positions={poly.coordinates}>
                     <Popup>Детализация участков</Popup>
                   </Polygon>
@@ -191,38 +231,42 @@ const Dashboard = () => {
 
       {/* Top 10 Charts */}
       <Row gutter={[24, 24]}>
-        <Col xs={24} lg={12}>
-          <div className="agro-card">
-            <Title level={4} style={{ marginTop: 0, marginBottom: 16 }}>Топ-10 удобрений (т)</Title>
-            <div style={{ width: '100%', height: 350 }}>
-              <ResponsiveContainer>
-                <BarChart data={MOCK_TOP_FERTILIZERS} layout="vertical" margin={{ top: 5, right: 30, left: 60, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e8e8e8" />
-                  <XAxis type="number" axisLine={false} tickLine={false} />
-                  <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} width={80} style={{ fontSize: 11 }} />
-                  <RechartsTooltip cursor={{ fill: 'rgba(26, 124, 62, 0.1)' }} />
-                  <Bar dataKey="volume" fill="#1a7c3e" radius={[0, 4, 4, 0]} onClick={handleBarClick} style={{ cursor: 'pointer' }} isAnimationActive={false} />
-                </BarChart>
-              </ResponsiveContainer>
+        {topFertilizers.length > 0 && (
+          <Col xs={24} lg={12}>
+            <div className="agro-card">
+              <Title level={4} style={{ marginTop: 0, marginBottom: 16 }}>Топ-10 удобрений (т)</Title>
+              <div style={{ width: '100%', height: 350 }}>
+                <ResponsiveContainer>
+                  <BarChart data={topFertilizers} layout="vertical" margin={{ top: 5, right: 30, left: 60, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e8e8e8" />
+                    <XAxis type="number" axisLine={false} tickLine={false} />
+                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} width={80} style={{ fontSize: 11 }} />
+                    <RechartsTooltip cursor={{ fill: 'rgba(26, 124, 62, 0.1)' }} />
+                    <Bar dataKey="volume" fill="#1a7c3e" radius={[0, 4, 4, 0]} onClick={handleBarClick} style={{ cursor: 'pointer' }} isAnimationActive={false} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-          </div>
-        </Col>
-        <Col xs={24} lg={12}>
-          <div className="agro-card">
-            <Title level={4} style={{ marginTop: 0, marginBottom: 16 }}>Топ-10 пестицидов (л)</Title>
-            <div style={{ width: '100%', height: 350 }}>
-              <ResponsiveContainer>
-                <BarChart data={MOCK_TOP_PESTICIDES} layout="vertical" margin={{ top: 5, right: 30, left: 60, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e8e8e8" />
-                  <XAxis type="number" axisLine={false} tickLine={false} />
-                  <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} width={80} style={{ fontSize: 11 }} />
-                  <RechartsTooltip cursor={{ fill: 'rgba(26, 124, 62, 0.1)' }} />
-                  <Bar dataKey="volume" fill="#1a7c3e" radius={[0, 4, 4, 0]} onClick={handleBarClick} style={{ cursor: 'pointer' }} isAnimationActive={false} />
-                </BarChart>
-              </ResponsiveContainer>
+          </Col>
+        )}
+        {topPesticides.length > 0 && (
+          <Col xs={24} lg={12}>
+            <div className="agro-card">
+              <Title level={4} style={{ marginTop: 0, marginBottom: 16 }}>Топ-10 пестицидов (л)</Title>
+              <div style={{ width: '100%', height: 350 }}>
+                <ResponsiveContainer>
+                  <BarChart data={topPesticides} layout="vertical" margin={{ top: 5, right: 30, left: 60, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e8e8e8" />
+                    <XAxis type="number" axisLine={false} tickLine={false} />
+                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} width={80} style={{ fontSize: 11 }} />
+                    <RechartsTooltip cursor={{ fill: 'rgba(26, 124, 62, 0.1)' }} />
+                    <Bar dataKey="volume" fill="#1a7c3e" radius={[0, 4, 4, 0]} onClick={handleBarClick} style={{ cursor: 'pointer' }} isAnimationActive={false} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-          </div>
-        </Col>
+          </Col>
+        )}
       </Row>
 
       <Drawer

@@ -14,10 +14,9 @@ const Documents = lazy(() => import('../pages/Documents'));
 const Reporting = lazy(() => import('../pages/Reporting'));
 const Audit = lazy(() => import('../pages/Audit'));
 const Products = lazy(() => import('../pages/Products'));
-const BackendRefs = lazy(() => import('../pages/BackendRefs'));
-const Harvest = lazy(() => import('../pages/Harvest'));
-const Subsidies = lazy(() => import('../pages/Subsidies'));
 const Import = lazy(() => import('../pages/Import'));
+const MarketAnalysis = lazy(() => import('../pages/MarketAnalysis'));
+const LivestockTracking = lazy(() => import('../pages/LivestockTracking'));
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { role, loading } = useAuth();
@@ -60,15 +59,15 @@ const AppRouter = () => {
         >
           <Route index element={<Dashboard />} />
           <Route path="reports" element={<Reports />} />
-          <Route path="harvest" element={<Harvest />} />
+          <Route path="market-analysis" element={<MarketAnalysis />} />
           <Route path="calculator" element={<Calculator />} />
           <Route path="references" element={<References />} />
           <Route path="documents" element={<Documents />} />
           <Route path="reporting" element={<Reporting />} />
           <Route path="subsidies" element={<Subsidies />} />
           <Route path="products" element={<Products />} />
-          <Route path="backend-refs" element={<BackendRefs />} />
           <Route path="import" element={<Import />} />
+          <Route path="livestock" element={<LivestockTracking />} />
           
           <Route 
             path="audit" 

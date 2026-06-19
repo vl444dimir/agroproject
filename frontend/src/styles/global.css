@@ -101,3 +101,23 @@ body {
   margin: 0;
   min-height: 280px;
 }
+
+.product-name-link {
+  color: #1a7c3e;
+  cursor: pointer;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.product-name-link:hover {
+  color: #115328;
+}
+
+/* Global rule to disable text underlining on hover for all elements inside table cells */
+.ant-table-cell a:hover,
+.ant-table-cell span:hover,
+.ant-table-cell button:hover {
+  text-decoration: none !important;
+}
+
+
