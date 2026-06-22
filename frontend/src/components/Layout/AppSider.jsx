@@ -45,11 +45,6 @@ const AppSider = () => {
         label: 'Заявки на субсидии',
       },
       {
-        key: '/harvest',
-        icon: <RiseOutlined />,
-        label: 'Учёт урожая',
-      },
-      {
         key: '/market-analysis',
         icon: <RiseOutlined />,
         label: 'Анализ рынка сбыта',
