@@ -1,0 +1,45 @@
+services:
+  db:
+    image: postgres:16
+    container_name: dalainfo_db
+    restart: always
+    environment:
+      POSTGRES_DB: agro_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - dalainfo_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d agro_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - platforms_net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    platform: linux/amd64
+    container_name: dalainfo_api
+    restart: always
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://dalainfo_db:5432/agro_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      # Доверяем X-Forwarded-* от nginx -> Spring видит https/443/домен -> запрос воспринимается как same-origin (CORS не применяется)
+      SPRING_APPLICATION_JSON: '{"server.forward-headers-strategy":"framework"}'
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - platforms_net
+
+volumes:
+  dalainfo_pgdata:
+
+networks:
+  platforms_net:
+    external: true
+    name: platforms_default

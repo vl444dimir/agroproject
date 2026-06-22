@@ -17,7 +17,6 @@ const Products = lazy(() => import('../pages/Products'));
 const Import = lazy(() => import('../pages/Import'));
 const MarketAnalysis = lazy(() => import('../pages/MarketAnalysis'));
 const LivestockTracking = lazy(() => import('../pages/LivestockTracking'));
-const Subsidies = lazy(() => import('../pages/Subsidies'));
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { role, loading } = useAuth();
