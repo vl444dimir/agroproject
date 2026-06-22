@@ -13,6 +13,9 @@ import {
   UploadOutlined,
   RiseOutlined,
   StockOutlined,
+  DollarOutlined,
+  DatabaseOutlined,
+  ImportOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../context/AuthContext';
 
