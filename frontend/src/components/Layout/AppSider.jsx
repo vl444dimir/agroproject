@@ -92,6 +92,11 @@ const AppSider = () => {
         icon: <UploadOutlined />,
         label: 'Импорт из Excel',
       });
+      items.push({
+        key: '/import',
+        icon: <ImportOutlined />,
+        label: 'Импорт из Excel',
+      });
     }
 
     if (role === 'admin') {
