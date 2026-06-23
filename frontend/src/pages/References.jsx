@@ -10,7 +10,7 @@ const { Option } = Select;
 
 const References = () => {
   const { role } = useAuth();
-  
+
   // Инициализируем данные и безопасно маппим поля бэкенда (formulation -> composition, normOfUse -> norm, price -> 0)
   const mapBackendProps = (item) => ({
     ...item,
@@ -18,10 +18,10 @@ const References = () => {
     status: item.status || 'active',
     composition: item.composition || (item.ingredients && item.ingredients.length > 0
       ? item.ingredients.map(ing => {
-          const name = ing.ingredientName || ing.name || '';
-          const conc = ing.concentration ? ` - ${ing.concentration}` : '';
-          return `${name}${conc}`;
-        }).join('\n')
+        const name = ing.ingredientName || ing.name || '';
+        const conc = ing.concentration ? ` - ${ing.concentration}` : '';
+        return `${name}${conc}`;
+      }).join('\n')
       : item.formulation || '—'),
     norm: item.norm || item.normOfUse || '—',
     price: item.price ?? 0,
@@ -39,12 +39,10 @@ const References = () => {
   const [allManufacturers, setAllManufacturers] = useState([]);
   const [allIngredients, setAllIngredients] = useState([]);
 
-  // Состояния для модальных окон добавления/редактирования
-  const [modalType, setModalType] = useState(null); // 'add', 'edit'
+  const [modalType, setModalType] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
   const [form] = Form.useForm();
 
-  // Состояния для просмотра деталей
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [viewingItem, setViewingItem] = useState(null);
 
@@ -53,7 +51,6 @@ const References = () => {
     setViewModalVisible(true);
   };
 
-  // Состояния для поиска аналогов
   const [analogModalVisible, setAnalogModalVisible] = useState(false);
   const [selectedForAnalog, setSelectedForAnalog] = useState(null);
   const [analogResults, setAnalogResults] = useState([]);
@@ -79,20 +76,17 @@ const References = () => {
       setAllIngredients(ingRes.data || []);
 
       const subsidiesList = subsidiesRes.data || [];
-      
-      // Маппим оригинальные данные
+
       const mappedFerts = (fertRes.data || []).map(item => ({ ...mapBackendProps(item), type: 'fert', categoryName: item.categoryName || 'Удобрения' }));
       const mappedPests = (pestRes.data || []).map(item => ({ ...mapBackendProps(item), type: 'pest', categoryName: item.categoryName || 'Пестициды' }));
       const allRefProducts = [...mappedFerts, ...mappedPests];
 
       if (subsidiesList.length > 0) {
-        // Извлекаем уникальные категории из субсидий
         const uniqueCats = Array.from(new Set(
           subsidiesList.map(item => item.categoryName?.trim()).filter(Boolean)
         )).sort();
         setCategories(uniqueCats);
 
-        // Обрабатываем продукты
         const processedProducts = [];
         const usedProductNames = new Set();
 
@@ -101,7 +95,6 @@ const References = () => {
           if (!subProdName) return;
           const subProdNameLower = subProdName.toLowerCase();
 
-          // Ищем препарат в официальном справочнике
           const refProduct = allRefProducts.find(p => p.name?.trim().toLowerCase() === subProdNameLower);
 
           // Вытаскиваем цену из субсидии:
@@ -144,7 +137,6 @@ const References = () => {
         setProductsData(processedProducts);
         setHasSubsidiesFilter(true);
       } else {
-        // Если субсидии пусты, показываем стандартные справочники
         setProductsData(allRefProducts);
         setCategories(['Удобрения', 'Пестициды']);
         setHasSubsidiesFilter(false);
@@ -160,9 +152,9 @@ const References = () => {
     setLoading(true);
     try {
       const selectedCategory = allCategories.find(c => c.id === values.categoryId);
-      
-      const combinedNorm = values.normValue 
-        ? `${values.normValue.trim()} ${values.normUnit || 'литр/га'}`.trim() 
+
+      const combinedNorm = values.normValue
+        ? `${values.normValue.trim()} ${values.normUnit || 'литр/га'}`.trim()
         : '';
 
       const payload = {
@@ -186,7 +178,7 @@ const References = () => {
         const createdProduct = mapBackendProps(response.data);
         createdProduct.categoryName = selectedCategory ? selectedCategory.name : 'Другое';
         createdProduct.type = (createdProduct.categoryName.toLowerCase().includes('удобрен')) ? 'fert' : 'pest';
-        
+
         setProductsData([createdProduct, ...productsData]);
         message.success('Запись успешно сохранена в базу данных');
       } else if (modalType === 'edit') {
@@ -194,7 +186,7 @@ const References = () => {
         const updatedProduct = mapBackendProps(response.data);
         updatedProduct.categoryName = selectedCategory ? selectedCategory.name : 'Другое';
         updatedProduct.type = (updatedProduct.categoryName.toLowerCase().includes('удобрен')) ? 'fert' : 'pest';
-        
+
         setProductsData(productsData.map(p => p.id === editingItem.id ? updatedProduct : p));
         message.success('Запись успешно обновлена в базе данных');
       }
@@ -209,7 +201,7 @@ const References = () => {
 
   const parseNormString = (normStr) => {
     if (!normStr || normStr === '—') return { value: '', unit: 'литр/га' };
-    
+
     const units = ['литр/га', 'л/га', 'кг/га', 'кг/т', 'г/га', 'г/т', 'л/т'];
     for (const unit of units) {
       if (normStr.endsWith(unit)) {
@@ -217,14 +209,14 @@ const References = () => {
         return { value, unit };
       }
     }
-    
+
     const lastSpaceIdx = normStr.lastIndexOf(' ');
     if (lastSpaceIdx !== -1) {
       const value = normStr.substring(0, lastSpaceIdx).trim();
       const unit = normStr.substring(lastSpaceIdx + 1).trim();
       return { value, unit };
     }
-    
+
     return { value: normStr, unit: 'литр/га' };
   };
 
@@ -279,8 +271,8 @@ const References = () => {
       onOk: async () => {
         const reason = document.getElementById('deleteReason').value;
         if (!reason.trim()) {
-           Modal.error({ title: 'Ошибка', content: 'Обоснование обязательно' });
-           return Promise.reject();
+          Modal.error({ title: 'Ошибка', content: 'Обоснование обязательно' });
+          return Promise.reject();
         }
         try {
           await referencesApi.deleteProduct(id);
@@ -298,32 +290,31 @@ const References = () => {
     const target = productsData.find(d => d.id === selectedForAnalog);
     if (!target) return;
 
-    // Алгоритм поиска дешевых аналогов (по совпадению первых слов состава и цене ниже текущей)
     const targetBaseComp = target.composition.split(/[\s,+]+/)[0].toLowerCase();
-    
+
     if (!targetBaseComp || targetBaseComp === '—') {
       setAnalogResults([]);
       return;
     }
 
-    const analogs = productsData.filter(item => 
+    const analogs = productsData.filter(item =>
       item.id !== target.id &&
       item.status === 'active' &&
       item.price < target.price &&
       item.composition.toLowerCase().includes(targetBaseComp)
     );
 
-    setAnalogResults(analogs.sort((a,b) => a.price - b.price));
+    setAnalogResults(analogs.sort((a, b) => a.price - b.price));
   };
 
   const getColumns = () => {
     const cols = [
-      { 
-        title: 'Название', 
-        dataIndex: 'name', 
+      {
+        title: 'Название',
+        dataIndex: 'name',
         key: 'name',
         render: (text, record) => (
-          <span 
+          <span
             className="product-name-link"
             onClick={() => handleView(record)}
           >
@@ -331,23 +322,23 @@ const References = () => {
           </span>
         )
       },
-      { 
-        title: 'Категория', 
-        dataIndex: 'categoryName', 
+      {
+        title: 'Категория',
+        dataIndex: 'categoryName',
         key: 'categoryName',
         render: c => <Tag color="blue">{c || '—'}</Tag>
       },
-      { 
-        title: 'Состав', 
-        dataIndex: 'composition', 
+      {
+        title: 'Состав',
+        dataIndex: 'composition',
         key: 'composition',
         render: text => <span style={{ whiteSpace: 'pre-line' }}>{text}</span>
       },
-      { 
-        title: 'Цена (₸)', 
-        dataIndex: 'price', 
-        key: 'price', 
-        render: p => p != null ? p.toLocaleString('ru-RU') : '0' 
+      {
+        title: 'Цена (₸)',
+        dataIndex: 'price',
+        key: 'price',
+        render: p => p != null ? p.toLocaleString('ru-RU') : '0'
       }
     ];
 
@@ -370,11 +361,10 @@ const References = () => {
     return cols;
   };
 
-  // Фильтруем данные для таблицы по выбранной категории и поисковой строке
   const filteredProducts = productsData.filter(item => {
     const matchesCategory = selectedCategory === 'ALL' || item.categoryName === selectedCategory;
     const matchesSearch = item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          item.composition?.toLowerCase().includes(searchQuery.toLowerCase());
+      item.composition?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
@@ -388,11 +378,11 @@ const References = () => {
       </Row>
 
       {hasSubsidiesFilter && (
-        <Alert 
+        <Alert
           message="Информация из субсидий"
           description="Список препаратов, категории и цены подтянуты напрямую из зарегистрированных в системе субсидий."
-          type="success" 
-          showIcon 
+          type="success"
+          showIcon
           style={{ marginBottom: 16 }}
         />
       )}
@@ -400,12 +390,12 @@ const References = () => {
       <div className="agro-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
           <Space wrap>
-            <Input.Search 
-              placeholder="Поиск по названию или составу..." 
-              style={{ width: 280 }} 
-              allowClear 
+            <Input.Search
+              placeholder="Поиск по названию или составу..."
+              style={{ width: 280 }}
+              allowClear
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)} 
+              onChange={e => setSearchQuery(e.target.value)}
             />
             <Select
               style={{ width: 240 }}
@@ -425,9 +415,9 @@ const References = () => {
           </Button>
         </div>
 
-        <Table 
-          columns={getColumns()} 
-          dataSource={filteredProducts.map(r => ({...r, key: r.id}))}
+        <Table
+          columns={getColumns()}
+          dataSource={filteredProducts.map(r => ({ ...r, key: r.id }))}
           size="middle"
           locale={{ emptyText: 'Нет данных' }}
           rowClassName={(r, i) => i % 2 === 0 ? 'table-row-light' : 'table-row-dark'}
@@ -446,7 +436,7 @@ const References = () => {
           <Form.Item name="name" label="Название" rules={[{ required: true, message: 'Обязательно' }]}>
             <Input />
           </Form.Item>
-          
+
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="categoryId" label="Категория" rules={[{ required: true, message: 'Обязательно' }]}>
@@ -567,8 +557,8 @@ const References = () => {
           Система анализирует состав выбранного препарата и предлагает более дешевые аналоги с идентичным или схожим составом активных веществ. Начните экономить бюджет!
         </Typography.Paragraph>
         <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
-          <Select 
-            style={{ flex: 1 }} 
+          <Select
+            style={{ flex: 1 }}
             placeholder="Выберите препарат, который хотите заменить..."
             onChange={setSelectedForAnalog}
             value={selectedForAnalog}
@@ -617,7 +607,7 @@ const References = () => {
             }}
           />
         ) : selectedForAnalog ? (
-           <Alert message="Среди активных предложений аналоги с подходящим составом и ценой ниже выбранного пока не найдены." type="warning" showIcon />
+          <Alert message="Среди активных предложений аналоги с подходящим составом и ценой ниже выбранного пока не найдены." type="warning" showIcon />
         ) : null}
       </Modal>
 
@@ -651,8 +641,8 @@ const References = () => {
                 {viewingItem.price != null ? viewingItem.price.toLocaleString('ru-RU') : '0'}
               </Descriptions.Item>
               <Descriptions.Item label="Производитель">
-                {typeof viewingItem.manufacturer === 'object' 
-                  ? viewingItem.manufacturer?.name || '—' 
+                {typeof viewingItem.manufacturer === 'object'
+                  ? viewingItem.manufacturer?.name || '—'
                   : viewingItem.manufacturer || '—'}
               </Descriptions.Item>
               <Descriptions.Item label="Статус">
