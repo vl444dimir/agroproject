@@ -77,11 +77,7 @@ const AppSider = () => {
         icon: <AppstoreAddOutlined />,
         label: 'Реестр препаратов',
       });
-      items.push({
-        key: '/backend-refs',
-        icon: <DatabaseOutlined />,
-        label: 'Справочники бэкенда',
-      });
+
       // items.push({
       //   key: '/documents',
       //   icon: <FolderOutlined />,
