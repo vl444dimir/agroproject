@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Typography, Table, Button, Input, Modal, Form, Space, InputNumber, notification, Row, Spin, Descriptions, Tag } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined, SearchOutlined } from '@ant-design/icons';
+import { Typography, Table, Button, Input, Modal, Form, Space, InputNumber, notification, Row, Col, Spin, Descriptions, Tag, Select, Tooltip, Card } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, ExclamationCircleOutlined, SearchOutlined, ExperimentOutlined, FilterOutlined } from '@ant-design/icons';
 import { useAuth } from '../context/AuthContext';
 import { productsApi } from '../api/productsApi';
+import { referencesApi } from '../api/references';
 
 const { Title } = Typography;
 
@@ -26,6 +27,18 @@ const Products = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
+  // States for analogues modal
+  const [analogProduct, setAnalogProduct] = useState(null);
+  const [analogues, setAnalogues] = useState([]);
+  const [analogModalVisible, setAnalogModalVisible] = useState(false);
+  const [analogLoading, setAnalogLoading] = useState(false);
+
+  // Filters for analogues
+  const [cultures, setCultures] = useState([]);
+  const [districts, setDistricts] = useState([]);
+  const [selectedCulture, setSelectedCulture] = useState(undefined);
+  const [selectedDistrict, setSelectedDistrict] = useState(undefined);
+
   // Reset page to 1 when search text changes
   useEffect(() => {
     setCurrentPage(1);
@@ -43,8 +56,22 @@ const Products = () => {
     }
   };
 
+  const loadFilters = async () => {
+    try {
+      const [culturesRes, districtsRes] = await Promise.all([
+        referencesApi.getCultures(),
+        referencesApi.getDistricts()
+      ]);
+      setCultures(culturesRes.data || []);
+      setDistricts(districtsRes.data || []);
+    } catch (err) {
+      console.error('Ошибка при загрузке справочников культур/районов:', err);
+    }
+  };
+
   useEffect(() => {
     fetchProducts();
+    loadFilters();
   }, []);
 
   const openModal = (record = null) => {
@@ -74,18 +101,42 @@ const Products = () => {
     }
   };
 
+  const fetchAnalogues = async (productId, cultureId, districtId) => {
+    setAnalogLoading(true);
+    try {
+      const params = {};
+      if (cultureId) params.cultureId = cultureId;
+      if (districtId) params.districtId = districtId;
+      const res = await productsApi.getAnalogues(productId, params);
+      setAnalogues(res.data || []);
+    } catch (err) {
+      notification.error({ message: 'Ошибка при загрузке аналогов' });
+      setAnalogues([]);
+    } finally {
+      setAnalogLoading(false);
+    }
+  };
+
   const handleShowAnalogues = async (record) => {
     setAnalogProduct(record);
     setAnalogues([]);
     setAnalogModalVisible(true);
-    setAnalogLoading(true);
-    try {
-      const res = await productsApi.getAnalogues(record.id);
-      setAnalogues(res.data || []);
-    } catch {
-      setAnalogues([]);
-    } finally {
-      setAnalogLoading(false);
+    setSelectedCulture(undefined);
+    setSelectedDistrict(undefined);
+    await fetchAnalogues(record.id, undefined, undefined);
+  };
+
+  const handleFilterChange = (type, value) => {
+    if (type === 'culture') {
+      setSelectedCulture(value);
+      if (analogProduct) {
+        fetchAnalogues(analogProduct.id, value, selectedDistrict);
+      }
+    } else if (type === 'district') {
+      setSelectedDistrict(value);
+      if (analogProduct) {
+        fetchAnalogues(analogProduct.id, selectedCulture, value);
+      }
     }
   };
 
@@ -301,6 +352,178 @@ const Products = () => {
           </div>
         ) : (
           <div style={{ textAlign: 'center', padding: 20 }}>Не удалось загрузить данные</div>
+        )}
+      </Modal>
+
+      <Modal
+        title={
+          <Space>
+            <ExperimentOutlined style={{ color: '#1a7c3e' }} />
+            <span>Интеллектуальный подбор аналогов препарата</span>
+          </Space>
+        }
+        open={analogModalVisible}
+        onCancel={() => setAnalogModalVisible(false)}
+        footer={[
+          <Button key="close" type="primary" onClick={() => setAnalogModalVisible(false)}>
+            Закрыть
+          </Button>
+        ]}
+        width={850}
+        style={{ top: 40 }}
+      >
+        {analogProduct && (
+          <div>
+            {/* Target product details */}
+            <Card 
+              style={{ 
+                background: 'linear-gradient(135deg, #f6ffed 0%, #e6f7ff 100%)', 
+                border: '1px solid #d9f7be',
+                borderRadius: '8px',
+                marginBottom: '20px'
+              }}
+              size="small"
+            >
+              <Descriptions title={null} column={3} size="small" bordered={false}>
+                <Descriptions.Item label="Целевой препарат">
+                  <strong style={{ fontSize: '15px', color: '#1a7c3e' }}>{analogProduct.name}</strong>
+                </Descriptions.Item>
+                <Descriptions.Item label="Категория">
+                  <Tag color="cyan">{analogProduct.categoryName || '—'}</Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="Исходная цена">
+                  <strong style={{ color: '#d48806' }}>
+                    {analogProduct.price != null ? `${analogProduct.price.toLocaleString('ru-RU')} ₸` : 'Не указана'}
+                  </strong>
+                </Descriptions.Item>
+              </Descriptions>
+              {analogProduct.ingredients && analogProduct.ingredients.length > 0 && (
+                <div style={{ marginTop: '8px' }}>
+                  <span style={{ fontSize: '12px', color: '#8c8c8c' }}>Действующие вещества: </span>
+                  {analogProduct.ingredients.map((ing, idx) => (
+                    <Tag color="green" key={idx} style={{ fontSize: '11px' }}>
+                      {ing.ingredientName} {ing.concentration ? `(${ing.concentration})` : ''}
+                    </Tag>
+                  ))}
+                </div>
+              )}
+            </Card>
+
+            {/* Filters panel */}
+            <Card 
+              size="small" 
+              title={<Space><FilterOutlined style={{ color: '#1890ff' }} /><span>Фильтры совместимости</span></Space>}
+              style={{ marginBottom: '20px', borderRadius: '8px' }}
+            >
+              <Row gutter={16}>
+                <Col span={12}>
+                  <div style={{ marginBottom: 4 }}><Typography.Text strong style={{ fontSize: '13px' }}>Культура:</Typography.Text></div>
+                  <Select
+                    style={{ width: '100%' }}
+                    placeholder="Все культуры"
+                    allowClear
+                    showSearch
+                    optionFilterProp="children"
+                    value={selectedCulture}
+                    onChange={(val) => handleFilterChange('culture', val)}
+                  >
+                    {cultures.map(c => (
+                      <Select.Option key={c.id} value={c.id}>{c.name}</Select.Option>
+                    ))}
+                  </Select>
+                </Col>
+                <Col span={12}>
+                  <div style={{ marginBottom: 4 }}><Typography.Text strong style={{ fontSize: '13px' }}>Район доступности:</Typography.Text></div>
+                  <Select
+                    style={{ width: '100%' }}
+                    placeholder="Все районы"
+                    allowClear
+                    showSearch
+                    optionFilterProp="children"
+                    value={selectedDistrict}
+                    onChange={(val) => handleFilterChange('district', val)}
+                  >
+                    {districts.map(d => (
+                      <Select.Option key={d.id} value={d.id}>{d.name}</Select.Option>
+                    ))}
+                  </Select>
+                </Col>
+              </Row>
+            </Card>
+
+            {/* Results Table */}
+            <Typography.Title level={5} style={{ marginBottom: '10px' }}>
+              Результаты поиска ({analogues.length})
+            </Typography.Title>
+            
+            <Table
+              loading={analogLoading}
+              dataSource={analogues.map(r => ({ ...r, key: r.id }))}
+              pagination={false}
+              size="middle"
+              locale={{ emptyText: 'Среди предложений аналоги с подходящим составом не найдены.' }}
+              rowClassName={(r, i) => i % 2 === 0 ? 'table-row-light' : 'table-row-dark'}
+              columns={[
+                {
+                  title: 'Название аналога',
+                  dataIndex: 'name',
+                  key: 'name',
+                  render: (text) => <strong>{text}</strong>
+                },
+                {
+                  title: 'Совпадающие ДВ',
+                  dataIndex: 'matchingIngredients',
+                  key: 'matchingIngredients',
+                  render: (ingredients) => (
+                    <Space wrap>
+                      {(ingredients || []).map(ing => (
+                        <Tag color="green" key={ing}>{ing}</Tag>
+                      ))}
+                    </Space>
+                  )
+                },
+                {
+                  title: 'Цена (₸)',
+                  dataIndex: 'price',
+                  key: 'price',
+                  render: (p) => p != null ? <b>{p.toLocaleString('ru-RU')}</b> : <span style={{ color: '#bfbfbf' }}>не указана</span>
+                },
+                {
+                  title: 'Разница',
+                  dataIndex: 'priceDifference',
+                  key: 'priceDifference',
+                  render: (diff) => {
+                    if (diff == null) return '—';
+                    const sign = diff > 0 ? '+' : '';
+                    const color = diff < 0 ? 'success' : diff > 0 ? 'error' : 'default';
+                    return <Tag color={color} style={{ fontWeight: 'bold' }}>{sign}{diff.toFixed(1)}%</Tag>;
+                  }
+                },
+                {
+                  title: 'Совместимость',
+                  key: 'compatibility',
+                  render: (_, record) => (
+                    <Space>
+                      {record.cultureNames && record.cultureNames.length > 0 ? (
+                        <Tooltip title={`Культуры: ${record.cultureNames.join(', ')}`}>
+                          <Tag color="blue" style={{ cursor: 'pointer' }}>{record.cultureNames.length} култ.</Tag>
+                        </Tooltip>
+                      ) : (
+                        <Tag color="default">нет культур</Tag>
+                      )}
+                      {record.districtNames && record.districtNames.length > 0 ? (
+                        <Tooltip title={`Районы: ${record.districtNames.join(', ')}`}>
+                          <Tag color="purple" style={{ cursor: 'pointer' }}>{record.districtNames.length} рег.</Tag>
+                        </Tooltip>
+                      ) : (
+                        <Tag color="default">нет регионов</Tag>
+                      )}
+                    </Space>
+                  )
+                }
+              ]}
+            />
+          </div>
         )}
       </Modal>
 

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Typography, Row, Col, Select, Button, Table, Space, Card, Spin, Input, Alert, Tag, Modal, Timeline, Badge, Tooltip, message, Descriptions } from 'antd';
-import { FilePdfOutlined, FileExcelOutlined, FileWordOutlined, RobotOutlined, SearchOutlined, CheckCircleOutlined, ClockCircleOutlined, CloseCircleOutlined, EyeOutlined, WarningOutlined } from '@ant-design/icons';
+import { Typography, Row, Col, Select, Button, Table, Space, Card, Spin, Input, Alert, Tag, Modal, Timeline, Badge, Tooltip, message, Descriptions, Radio } from 'antd';
+import { FilePdfOutlined, FileExcelOutlined, FileWordOutlined, RobotOutlined, SearchOutlined, CheckCircleOutlined, ClockCircleOutlined, CloseCircleOutlined, EyeOutlined, WarningOutlined, ExperimentOutlined, FilterOutlined } from '@ant-design/icons';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -16,6 +16,81 @@ import backendClient from '../api/backendClient';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+
+const AnalogueSubTable = ({ productId, parentPrice }) => {
+  const [analogues, setAnalogues] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchSubAnalogues = async () => {
+      setLoading(true);
+      try {
+        const res = await productsApi.getAnalogues(productId);
+        setAnalogues(res.data || []);
+      } catch (err) {
+        console.error('Ошибка при загрузке аналогов:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSubAnalogues();
+  }, [productId]);
+
+  const columns = [
+    {
+      title: 'Название аналога',
+      dataIndex: 'name',
+      key: 'name',
+      render: (text) => <strong>{text}</strong>
+    },
+    {
+      title: 'Совпадающие ДВ',
+      dataIndex: 'matchingIngredients',
+      key: 'matchingIngredients',
+      render: (ingredients) => (
+        <Space wrap>
+          {(ingredients || []).map(ing => (
+            <Tag color="green" key={ing}>{ing}</Tag>
+          ))}
+        </Space>
+      )
+    },
+    {
+      title: 'Цена (₸)',
+      dataIndex: 'price',
+      key: 'price',
+      render: (p) => p != null ? <b>{p.toLocaleString('ru-RU')}</b> : <span style={{ color: '#bfbfbf' }}>не указана</span>
+    },
+    {
+      title: 'Разница',
+      dataIndex: 'priceDifference',
+      key: 'priceDifference',
+      render: (diff) => {
+        if (diff == null) return '—';
+        const sign = diff > 0 ? '+' : '';
+        const color = diff < 0 ? 'success' : diff > 0 ? 'error' : 'default';
+        return <Tag color={color} style={{ fontWeight: 'bold' }}>{sign}{diff.toFixed(1)}%</Tag>;
+      }
+    }
+  ];
+
+  return (
+    <div style={{ padding: '12px 16px', background: '#f9f9f9', borderLeft: '3px solid #1a7c3e', borderRadius: '4px', margin: '4px 0' }}>
+      <Text type="secondary" strong style={{ display: 'block', marginBottom: '8px' }}>
+        <ExperimentOutlined style={{ marginRight: '6px', color: '#1a7c3e' }} />
+        Рекомендованные более дешевые аналоги от бэкенда:
+      </Text>
+      <Table
+        loading={loading}
+        columns={columns}
+        dataSource={analogues.map(r => ({ ...r, key: r.id }))}
+        pagination={false}
+        size="small"
+        locale={{ emptyText: 'Для данного препарата более дешевых аналогов с подходящим составом не найдено.' }}
+      />
+    </div>
+  );
+};
 
 const Reports = () => {
   const { role } = useAuth();
@@ -34,6 +109,252 @@ const Reports = () => {
   // Alternative Search State
   const [altSearchQuery, setAltSearchQuery] = useState('');
   const [altResults, setAltResults] = useState([]);
+
+  // Chemical Elements search config
+  const CHEMICAL_ELEMENTS_MAP = {
+    'N': ['азот', 'nitrogen', 'селитра', 'мочевина', 'карбамид', 'аммиач'],
+    'P': ['фосфор', 'phosphorus', 'фосф', 'аммофос', 'суперфосфат'],
+    'K': ['калий', 'potassium', 'кал', 'хлор'],
+    'S': ['сера', 'sulfur', 'сульфат'],
+    'Mg': ['магний', 'magnesium', 'магн'],
+    'Ca': ['кальций', 'calcium', 'мел', 'извест'],
+    'Fe': ['железо', 'iron', 'желез'],
+    'Zn': ['цинк', 'zinc', 'цинк'],
+    'B': ['бор', 'boron', 'борн']
+  };
+
+  const CHEMICAL_ELEMENTS = [
+    { symbol: 'N', name: 'Азот', color: '#1a7c3e', bg: '#f6ffed' },
+    { symbol: 'P', name: 'Фосфор', color: '#fa8c16', bg: '#fff7e6' },
+    { symbol: 'K', name: 'Калий', color: '#1890ff', bg: '#e6f7ff' },
+    { symbol: 'S', name: 'Сера', color: '#722ed1', bg: '#f9f0ff' },
+    { symbol: 'Mg', name: 'Магний', color: '#13c2c2', bg: '#e6fffb' },
+    { symbol: 'Ca', name: 'Кальций', color: '#eb2f96', bg: '#fff0f6' },
+    { symbol: 'Fe', name: 'Железо', color: '#d4380d', bg: '#fff2e8' },
+    { symbol: 'Zn', name: 'Цинк', color: '#52c41a', bg: '#f6ffed' },
+    { symbol: 'B', name: 'Бор', color: '#fa142d', bg: '#fff1f0' }
+  ];
+
+  // States for chemical active ingredients search
+  const [allIngredients, setAllIngredients] = useState([]);
+  const [selectedAltIngredients, setSelectedAltIngredients] = useState([]);
+  const [selectedChemicalElements, setSelectedChemicalElements] = useState([]);
+
+  // States for modal ingredients search
+  const [selectedModalIngredients, setSelectedModalIngredients] = useState([]);
+  const [selectedModalChemicalElements, setSelectedModalChemicalElements] = useState([]);
+
+  // States for analogues modal
+  const [analogModalVisible, setAnalogModalVisible] = useState(false);
+  const [selectedForAnalog, setSelectedForAnalog] = useState(null);
+  const [analogResults, setAnalogResults] = useState([]);
+  const [analogLoading, setAnalogLoading] = useState(false);
+
+  // States for filters inside the modal
+  const [modalCultures, setModalCultures] = useState([]);
+  const [modalDistricts, setModalDistricts] = useState([]);
+  const [modalSelectedCulture, setModalSelectedCulture] = useState(undefined);
+  const [modalSelectedDistrict, setModalSelectedDistrict] = useState(undefined);
+  const [modalSearchMode, setModalSearchMode] = useState('product');
+
+  // Search logic helpers
+  const performSearch = (selectedIngs, selectedElements, textQuery) => {
+    const dataList = [...fertilizers, ...pesticides];
+    const resolvedElementKeywords = [];
+    selectedElements.forEach(symbol => {
+      const keywords = CHEMICAL_ELEMENTS_MAP[symbol] || [];
+      resolvedElementKeywords.push(...keywords);
+    });
+
+    const activeSearchTerms = [
+      ...selectedIngs.map(ing => ing.toLowerCase()),
+      ...resolvedElementKeywords.map(k => k.toLowerCase())
+    ];
+
+    let textKeywords = [];
+    if (textQuery) {
+      const parts = textQuery.split(/[\s,]+/);
+      parts.forEach(part => {
+        const cleanPart = part.trim().toUpperCase();
+        if (cleanPart === 'NPK') {
+          textKeywords.push(...CHEMICAL_ELEMENTS_MAP['N'], ...CHEMICAL_ELEMENTS_MAP['P'], ...CHEMICAL_ELEMENTS_MAP['K']);
+        } else if (CHEMICAL_ELEMENTS_MAP[cleanPart]) {
+          textKeywords.push(...CHEMICAL_ELEMENTS_MAP[cleanPart]);
+        } else {
+          textKeywords.push(part.toLowerCase());
+        }
+      });
+    }
+
+    let results = [];
+    if (activeSearchTerms.length === 0 && textKeywords.length === 0) {
+      results = dataList.slice(0, 5);
+    } else {
+      results = dataList.map(item => {
+        const comp = item.composition?.toLowerCase() || '';
+        const name = item.name?.toLowerCase() || '';
+        let matchCount = 0;
+
+        activeSearchTerms.forEach(term => {
+          if (comp.includes(term) || name.includes(term)) {
+            matchCount++;
+          }
+        });
+
+        let textMatch = false;
+        if (textKeywords.length > 0) {
+          textKeywords.forEach(kw => {
+            if (comp.includes(kw) || name.includes(kw)) {
+              textMatch = true;
+              matchCount++;
+            }
+          });
+        }
+
+        const termCriteriaMet = activeSearchTerms.length === 0 || matchCount > 0;
+        const textCriteriaMet = textKeywords.length === 0 || textMatch;
+
+        if (termCriteriaMet && textCriteriaMet) {
+          return { ...item, matchCount };
+        }
+        return null;
+      }).filter(Boolean);
+
+      results.sort((a, b) => {
+        if (b.matchCount !== a.matchCount) {
+          return b.matchCount - a.matchCount;
+        }
+        return (a.price || 0) - (b.price || 0);
+      });
+    }
+
+    setAltResults(results);
+  };
+
+  const handleChemicalElementToggle = (symbol) => {
+    const updated = selectedChemicalElements.includes(symbol)
+      ? selectedChemicalElements.filter(s => s !== symbol)
+      : [...selectedChemicalElements, symbol];
+    setSelectedChemicalElements(updated);
+    performSearch(selectedAltIngredients, updated, altSearchQuery);
+  };
+
+  const handleIngredientsSearchChange = (selectedIngs) => {
+    setSelectedAltIngredients(selectedIngs);
+    performSearch(selectedIngs, selectedChemicalElements, altSearchQuery);
+  };
+
+  const performModalIngredientsSearch = (selectedIngs, selectedElements, cultureId = modalSelectedCulture, districtId = modalSelectedDistrict) => {
+    const dataList = [...fertilizers, ...pesticides];
+    const resolvedElementKeywords = [];
+    selectedElements.forEach(symbol => {
+      const keywords = CHEMICAL_ELEMENTS_MAP[symbol] || [];
+      resolvedElementKeywords.push(...keywords);
+    });
+
+    const activeSearchTerms = [
+      ...selectedIngs.map(ing => ing.toLowerCase()),
+      ...resolvedElementKeywords.map(k => k.toLowerCase())
+    ];
+
+    if (activeSearchTerms.length === 0) {
+      setAnalogResults([]);
+      return;
+    }
+
+    let results = dataList.map(item => {
+      const comp = item.composition?.toLowerCase() || '';
+      const name = item.name?.toLowerCase() || '';
+      let matchCount = 0;
+      activeSearchTerms.forEach(term => {
+        if (comp.includes(term) || name.includes(term)) {
+          matchCount++;
+        }
+      });
+
+      if (matchCount > 0) {
+        return { ...item, matchCount };
+      }
+      return null;
+    }).filter(Boolean);
+
+    if (cultureId) {
+      results = results.filter(item => {
+        const culture = modalCultures.find(c => c.id === cultureId);
+        return culture && item.cultureNames?.includes(culture.name);
+      });
+    }
+
+    if (districtId) {
+      results = results.filter(item => {
+        const district = modalDistricts.find(d => d.id === districtId);
+        return district && item.districtNames?.includes(district.name);
+      });
+    }
+
+    results.sort((a, b) => {
+      if (b.matchCount !== a.matchCount) {
+        return b.matchCount - a.matchCount;
+      }
+      return (a.price || 0) - (b.price || 0);
+    });
+
+    setAnalogResults(results);
+  };
+
+  const loadModalFilters = async () => {
+    try {
+      const [culturesRes, districtsRes] = await Promise.all([
+        referencesApi.getCultures(),
+        referencesApi.getDistricts()
+      ]);
+      setModalCultures(culturesRes.data || []);
+      setModalDistricts(districtsRes.data || []);
+    } catch (err) {
+      console.error('Ошибка при загрузке справочников для модалки:', err);
+    }
+  };
+
+  const fetchModalAnalogues = async (productId, cultureId, districtId) => {
+    if (!productId) return;
+    setAnalogLoading(true);
+    try {
+      const params = {};
+      if (cultureId) params.cultureId = cultureId;
+      if (districtId) params.districtId = districtId;
+      const res = await productsApi.getAnalogues(productId, params);
+      setAnalogResults(res.data || []);
+    } catch (err) {
+      console.error('Ошибка при поиске аналогов:', err);
+      message.error('Не удалось найти аналоги');
+      setAnalogResults([]);
+    } finally {
+      setAnalogLoading(false);
+    }
+  };
+
+  const handleModalFilterChange = (type, value) => {
+    let nextCulture = modalSelectedCulture;
+    let nextDistrict = modalSelectedDistrict;
+    
+    if (type === 'culture') {
+      nextCulture = value;
+      setModalSelectedCulture(value);
+    } else if (type === 'district') {
+      nextDistrict = value;
+      setModalSelectedDistrict(value);
+    }
+
+    if (modalSearchMode === 'product') {
+      fetchModalAnalogues(selectedForAnalog, nextCulture, nextDistrict);
+    } else {
+      performModalIngredientsSearch(selectedModalIngredients, selectedModalChemicalElements, nextCulture, nextDistrict);
+    }
+  };
+
+  const handleAltSearch = () => {
+    performSearch(selectedAltIngredients, selectedChemicalElements, altSearchQuery);
+  };
 
   // Selected Report for detail modal
   const [selectedReport, setSelectedReport] = useState(null);
@@ -92,10 +413,11 @@ const Reports = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [harvResponse, fertResponse, pestResponse] = await Promise.all([
+      const [harvResponse, fertResponse, pestResponse, ingredientsResponse] = await Promise.all([
         harvestApi.getAllRecords(),
         referencesApi.getFertilizers(),
-        referencesApi.getPesticides()
+        referencesApi.getPesticides(),
+        referencesApi.getIngredients()
       ]);
       setHarvestData(harvResponse.data || []);
       
@@ -104,6 +426,8 @@ const Reports = () => {
       
       setFertilizers(mappedFerts);
       setPesticides(mappedPests);
+      setAllIngredients(ingredientsResponse.data || []);
+      setAltResults([...mappedFerts, ...mappedPests].slice(0, 5));
     } catch (e) {
       console.error("Ошибка загрузки данных", e);
     } finally {
@@ -137,6 +461,7 @@ const Reports = () => {
 
   useEffect(() => {
     fetchData();
+    loadModalFilters();
   }, []);
 
   useEffect(() => {
@@ -373,19 +698,7 @@ const Reports = () => {
     }, 1500);
   };
 
-  const handleAltSearch = () => {
-    if (!altSearchQuery) {
-      setAltResults([]);
-      return;
-    }
-    const q = altSearchQuery.toLowerCase();
-    const dataList = [...fertilizers, ...pesticides];
-    const results = dataList.filter(item => 
-      item.name?.toLowerCase().includes(q) || 
-      item.composition?.toLowerCase().includes(q)
-    );
-    setAltResults(results);
-  };
+
 
   const handleStatusUpdate = async (reportId, newStatus) => {
     setUpdatingStatus(true);
@@ -456,6 +769,9 @@ const Reports = () => {
         </Col>
         <Col>
           <Space>
+            <Button type="primary" icon={<ExperimentOutlined />} onClick={() => { setAnalogResults([]); setSelectedForAnalog(null); setSelectedModalIngredients([]); setSelectedModalChemicalElements([]); setAnalogModalVisible(true); }}>
+              Подобрать аналог
+            </Button>
             <Button icon={<FilePdfOutlined />} onClick={handleExportPDF}>PDF</Button>
             <Button icon={<FileExcelOutlined />} onClick={handleExportExcel}>Excel</Button>
             <Button icon={<FileWordOutlined />} onClick={handleExportDOCX}>DOCX</Button>
@@ -644,18 +960,76 @@ const Reports = () => {
         <Col xs={24} lg={12}>
           <div className="agro-card">
             <Title level={4} style={{ marginTop: 0, marginBottom: 16 }}>Поиск альтернатив (аналогов)</Title>
+            
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ marginBottom: 4 }}><Text strong style={{ fontSize: '13px' }}>Поиск по действующим веществам (составу):</Text></div>
+              <Select
+                mode="multiple"
+                style={{ width: '100%' }}
+                placeholder="Выберите одно или несколько ДВ..."
+                allowClear
+                value={selectedAltIngredients}
+                onChange={handleIngredientsSearchChange}
+                optionFilterProp="children"
+                showSearch
+              >
+                {allIngredients.map(ing => (
+                  <Option key={ing.id} value={ing.name}>{ing.name}</Option>
+                ))}
+              </Select>
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ marginBottom: 6 }}><Text type="secondary" style={{ fontSize: '12px' }}>Быстрый выбор химических элементов:</Text></div>
+              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px' }}>
+                {CHEMICAL_ELEMENTS.map(el => {
+                  const isSelected = selectedChemicalElements.includes(el.symbol);
+                  return (
+                    <div
+                      key={el.symbol}
+                      onClick={() => handleChemicalElementToggle(el.symbol)}
+                      style={{
+                        flex: '0 0 54px',
+                        height: '56px',
+                        borderRadius: '6px',
+                        border: isSelected ? `2px solid ${el.color}` : '1px solid #d9d9d9',
+                        background: isSelected ? el.bg : '#fff',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        transition: 'all 0.3s ease',
+                        boxShadow: isSelected ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+                        userSelect: 'none'
+                      }}
+                    >
+                      <strong style={{ fontSize: '16px', color: isSelected ? el.color : '#262626', lineHeight: '1.2' }}>{el.symbol}</strong>
+                      <span style={{ fontSize: '9px', color: isSelected ? el.color : '#8c8c8c', marginTop: '2px' }}>{el.name}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 4 }}><Text strong style={{ fontSize: '13px' }}>Поиск по названию препарата:</Text></div>
             <Space.Compact style={{ width: '100%', marginBottom: 16 }}>
               <Input 
-                placeholder="Состав или название (например: Азот, Глифосат)" 
+                placeholder="Состав или название (например: Азот, NPK, Глифосат)" 
                 value={altSearchQuery}
-                onChange={e => setAltSearchQuery(e.target.value)}
+                onChange={e => {
+                  const val = e.target.value;
+                  setAltSearchQuery(val);
+                  performSearch(selectedAltIngredients, selectedChemicalElements, val);
+                }}
                 onPressEnter={handleAltSearch}
               />
               <Button type="primary" onClick={handleAltSearch}><SearchOutlined /></Button>
             </Space.Compact>
+
             <Table 
               columns={[
-                { title: 'Название', dataIndex: 'name', key: 'name' },
+                { title: 'Название', dataIndex: 'name', key: 'name', render: text => <strong>{text}</strong> },
                 { 
                   title: 'Состав', 
                   dataIndex: 'composition', 
@@ -674,7 +1048,11 @@ const Reports = () => {
                   }
                 },
               ]}
-              dataSource={altResults.map((r,i) => ({...r, key: i}))}
+              dataSource={altResults.map((r,i) => ({...r, key: r.id || `alt-${i}`}))}
+              expandable={{
+                expandedRowRender: (record) => <AnalogueSubTable productId={record.id} parentPrice={record.price} />,
+                rowExpandable: (record) => record.id && typeof record.id === 'number',
+              }}
               pagination={{ pageSize: 5 }}
               size="small"
               locale={{ emptyText: 'Нет данных' }}
@@ -999,6 +1377,297 @@ const Reports = () => {
             </Card>
           </div>
         ) : <Spin size="large" />}
+      </Modal>
+
+      <Modal
+        title={
+          <Space>
+            <ExperimentOutlined style={{ color: '#1a7c3e' }} />
+            <span>Алгоритм подбора аналогов препаратов</span>
+          </Space>
+        }
+        open={analogModalVisible}
+        onCancel={() => setAnalogModalVisible(false)}
+        footer={[
+          <Button key="close" type="primary" onClick={() => setAnalogModalVisible(false)}>
+            Закрыть
+          </Button>
+        ]}
+        width={850}
+        style={{ top: 40 }}
+      >
+        <Typography.Paragraph type="secondary">
+          Выберите способ подбора: по конкретному препарату из каталога или напрямую по действующим веществам / химическим элементам.
+        </Typography.Paragraph>
+
+        <div style={{ marginBottom: 16, textAlign: 'center' }}>
+          <Radio.Group 
+            value={modalSearchMode} 
+            onChange={(e) => {
+              const mode = e.target.value;
+              setModalSearchMode(mode);
+              setAnalogResults([]);
+              setSelectedModalIngredients([]);
+              setSelectedModalChemicalElements([]);
+              setSelectedForAnalog(null);
+            }}
+            buttonStyle="solid"
+          >
+            <Radio.Button value="product">По препарату</Radio.Button>
+            <Radio.Button value="ingredients">По составу (ДВ)</Radio.Button>
+          </Radio.Group>
+        </div>
+
+        {modalSearchMode === 'product' ? (
+          <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
+            <Select
+              style={{ flex: 1 }}
+              placeholder="Выберите препарат, который хотите заменить..."
+              onChange={(val) => {
+                setSelectedForAnalog(val);
+                setAnalogResults([]);
+                setModalSelectedCulture(undefined);
+                setModalSelectedDistrict(undefined);
+              }}
+              value={selectedForAnalog}
+              showSearch
+              optionFilterProp="children"
+              size="large"
+            >
+              {[...fertilizers, ...pesticides].map(d => (
+                <Select.Option key={d.id} value={d.id}>
+                  {d.name} [{d.categoryName || (d.type === 'fert' ? 'Удобрения' : 'Пестициды')}] (₸ {d.price != null ? d.price.toLocaleString('ru-RU') : '0'} / ед.)
+                </Select.Option>
+              ))}
+            </Select>
+            <Button 
+              type="primary" 
+              size="large" 
+              icon={<SearchOutlined />} 
+              onClick={() => fetchModalAnalogues(selectedForAnalog, modalSelectedCulture, modalSelectedDistrict)} 
+              disabled={!selectedForAnalog}
+            >
+              Найти аналоги
+            </Button>
+          </div>
+        ) : (
+          <div style={{ marginBottom: 20, background: '#fafafa', padding: '16px', borderRadius: '8px', border: '1px dashed #d9d9d9' }}>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ marginBottom: 4 }}><Text strong style={{ fontSize: '13px' }}>Выберите действующие вещества (ДВ):</Text></div>
+              <Select
+                mode="multiple"
+                style={{ width: '100%' }}
+                placeholder="Выберите одно или несколько веществ..."
+                allowClear
+                value={selectedModalIngredients}
+                onChange={(vals) => {
+                  setSelectedModalIngredients(vals);
+                  performModalIngredientsSearch(vals, selectedModalChemicalElements);
+                }}
+                optionFilterProp="children"
+                showSearch
+              >
+                {allIngredients.map(ing => (
+                  <Option key={ing.id} value={ing.name}>{ing.name}</Option>
+                ))}
+              </Select>
+            </div>
+            
+            <div>
+              <div style={{ marginBottom: 6 }}><Text type="secondary" style={{ fontSize: '12px' }}>Быстрый выбор химических элементов:</Text></div>
+              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px' }}>
+                {CHEMICAL_ELEMENTS.map(el => {
+                  const isSelected = selectedModalChemicalElements.includes(el.symbol);
+                  return (
+                    <div
+                      key={el.symbol}
+                      onClick={() => {
+                        const updated = selectedModalChemicalElements.includes(el.symbol)
+                          ? selectedModalChemicalElements.filter(s => s !== el.symbol)
+                          : [...selectedModalChemicalElements, el.symbol];
+                        setSelectedModalChemicalElements(updated);
+                        performModalIngredientsSearch(selectedModalIngredients, updated);
+                      }}
+                      style={{
+                        flex: '0 0 54px',
+                        height: '56px',
+                        borderRadius: '6px',
+                        border: isSelected ? `2px solid ${el.color}` : '1px solid #d9d9d9',
+                        background: isSelected ? el.bg : '#fff',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        transition: 'all 0.3s ease',
+                        boxShadow: isSelected ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+                        userSelect: 'none'
+                      }}
+                    >
+                      <strong style={{ fontSize: '16px', color: isSelected ? el.color : '#262626', lineHeight: '1.2' }}>{el.symbol}</strong>
+                      <span style={{ fontSize: '9px', color: isSelected ? el.color : '#8c8c8c', marginTop: '2px' }}>{el.name}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {(modalSearchMode === 'product' && selectedForAnalog) && (
+          <Card 
+            style={{ 
+              background: 'linear-gradient(135deg, #f6ffed 0%, #e6f7ff 100%)', 
+              border: '1px solid #d9f7be',
+              borderRadius: '8px',
+              marginBottom: '20px'
+            }}
+            size="small"
+          >
+            {(() => {
+              const currentRef = [...fertilizers, ...pesticides].find(p => p.id === selectedForAnalog);
+              if (!currentRef) return null;
+              return (
+                <>
+                  <Descriptions title={null} column={3} size="small" bordered={false}>
+                    <Descriptions.Item label="Целевой препарат">
+                      <strong style={{ fontSize: '15px', color: '#1a7c3e' }}>{currentRef.name}</strong>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Категория">
+                      <Tag color="cyan">{currentRef.categoryName || '—'}</Tag>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Исходная цена">
+                      <strong style={{ color: '#d48806' }}>
+                        {currentRef.price != null ? `${currentRef.price.toLocaleString('ru-RU')} ₸` : 'Не указана'}
+                      </strong>
+                    </Descriptions.Item>
+                  </Descriptions>
+                  {currentRef.composition && (
+                    <div style={{ marginTop: '8px' }}>
+                      <span style={{ fontSize: '12px', color: '#8c8c8c' }}>Состав: </span>
+                      <span style={{ fontSize: '12px', color: '#262626', whiteSpace: 'pre-line' }}>{currentRef.composition}</span>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </Card>
+        )}
+
+        {((modalSearchMode === 'product' && selectedForAnalog) || (modalSearchMode === 'ingredients' && (selectedModalIngredients.length > 0 || selectedModalChemicalElements.length > 0))) && (
+          <div>
+            {/* Filters panel inside modal */}
+            <Card 
+              size="small" 
+              title={<Space><FilterOutlined style={{ color: '#1890ff', fontSize: '13px' }} /><span>Фильтры совместимости</span></Space>}
+              style={{ marginBottom: '20px', borderRadius: '8px' }}
+            >
+              <Row gutter={16}>
+                <Col span={12}>
+                  <div style={{ marginBottom: 4 }}><Typography.Text strong style={{ fontSize: '13px' }}>Культура:</Typography.Text></div>
+                  <Select
+                    style={{ width: '100%' }}
+                    placeholder="Все культуры"
+                    allowClear
+                    showSearch
+                    optionFilterProp="children"
+                    value={modalSelectedCulture}
+                    onChange={(val) => handleModalFilterChange('culture', val)}
+                  >
+                    {modalCultures.map(c => (
+                      <Select.Option key={c.id} value={c.id}>{c.name}</Select.Option>
+                    ))}
+                  </Select>
+                </Col>
+                <Col span={12}>
+                  <div style={{ marginBottom: 4 }}><Typography.Text strong style={{ fontSize: '13px' }}>Район доступности:</Typography.Text></div>
+                  <Select
+                    style={{ width: '100%' }}
+                    placeholder="Все районы"
+                    allowClear
+                    showSearch
+                    optionFilterProp="children"
+                    value={modalSelectedDistrict}
+                    onChange={(val) => handleModalFilterChange('district', val)}
+                  >
+                    {modalDistricts.map(d => (
+                      <Select.Option key={d.id} value={d.id}>{d.name}</Select.Option>
+                    ))}
+                  </Select>
+                </Col>
+              </Row>
+            </Card>
+
+            {/* Results Table */}
+            <Table
+              loading={analogLoading}
+              dataSource={analogResults.map(r => ({ ...r, key: r.id }))}
+              pagination={false}
+              size="middle"
+              locale={{ emptyText: 'Среди предложений аналоги с подходящим составом не найдены.' }}
+              rowClassName={(r, i) => i % 2 === 0 ? 'table-row-light' : 'table-row-dark'}
+              columns={[
+                {
+                  title: 'Название аналога',
+                  dataIndex: 'name',
+                  key: 'name',
+                  render: (text) => <strong>{text}</strong>
+                },
+                {
+                  title: 'Совпадающие ДВ',
+                  dataIndex: 'matchingIngredients',
+                  key: 'matchingIngredients',
+                  render: (ingredients) => (
+                    <Space wrap>
+                      {(ingredients || []).map(ing => (
+                        <Tag color="green" key={ing}>{ing}</Tag>
+                      ))}
+                    </Space>
+                  )
+                },
+                {
+                  title: 'Цена (₸)',
+                  dataIndex: 'price',
+                  key: 'price',
+                  render: (p) => p != null ? <b>{p.toLocaleString('ru-RU')}</b> : <span style={{ color: '#bfbfbf' }}>не указана</span>
+                },
+                {
+                  title: 'Разница',
+                  dataIndex: 'priceDifference',
+                  key: 'priceDifference',
+                  render: (diff) => {
+                    if (diff == null) return '—';
+                    const sign = diff > 0 ? '+' : '';
+                    const color = diff < 0 ? 'success' : diff > 0 ? 'error' : 'default';
+                    return <Tag color={color} style={{ fontWeight: 'bold' }}>{sign}{diff.toFixed(1)}%</Tag>;
+                  }
+                },
+                {
+                  title: 'Совместимость',
+                  key: 'compatibility',
+                  render: (_, record) => (
+                    <Space>
+                      {record.cultureNames && record.cultureNames.length > 0 ? (
+                        <Tooltip title={`Культуры: ${record.cultureNames.join(', ')}`}>
+                          <Tag color="blue" style={{ cursor: 'pointer' }}>{record.cultureNames.length} култ.</Tag>
+                        </Tooltip>
+                      ) : (
+                        <Tag color="default">нет культур</Tag>
+                      )}
+                      {record.districtNames && record.districtNames.length > 0 ? (
+                        <Tooltip title={`Районы: ${record.districtNames.join(', ')}`}>
+                          <Tag color="purple" style={{ cursor: 'pointer' }}>{record.districtNames.length} рег.</Tag>
+                        </Tooltip>
+                      ) : (
+                        <Tag color="default">нет регионов</Tag>
+                      )}
+                    </Space>
+                  )
+                }
+              ]}
+            />
+          </div>
+        )}
       </Modal>
     </div>
   );
