@@ -28,82 +28,77 @@ const AppSider = () => {
   const { role } = useAuth();
 
   const menuItems = useMemo(() => {
-    const items = [
+    const allItems = [
       {
         key: '/',
         icon: <BarChartOutlined />,
         label: 'Главная / Статистика',
+        roles: ['admin', 'staff', 'employee', 'user'],
       },
       {
         key: '/reports',
         icon: <FileTextOutlined />,
         label: 'Субсидии и отчёты',
+        roles: ['admin', 'staff', 'employee', 'user'],
       },
       {
         key: '/subsidies',
         icon: <DollarOutlined />,
         label: 'Заявки на субсидии',
+        roles: ['admin', 'staff', 'employee', 'user'],
       },
       {
         key: '/market-analysis',
         icon: <RiseOutlined />,
         label: 'Анализ рынка сбыта',
+        roles: ['admin', 'staff', 'employee', 'user'],
       },
       {
         key: '/calculator',
         icon: <CalculatorOutlined />,
         label: 'Онлайн-калькулятор',
+        roles: ['admin', 'staff', 'employee', 'user'],
       },
       {
         key: '/references',
         icon: <BookOutlined />,
         label: 'Справочники',
+        roles: ['admin', 'staff', 'employee', 'user'],
       },
       {
         key: '/reporting',
         icon: <ContainerOutlined />,
         label: 'Формирование отчетов',
+        roles: ['admin', 'staff', 'employee', 'user'],
       },
       {
         key: '/livestock',
         icon: <StockOutlined />,
         label: 'Поголовье скота',
+        roles: ['admin', 'staff', 'employee', 'user'],
       },
-    ];
-
-    if (role === 'employee' || role === 'admin' || role === 'staff') {
-      items.push({
+      {
         key: '/products',
         icon: <AppstoreAddOutlined />,
         label: 'Реестр препаратов',
-      });
-
-      // items.push({
-      //   key: '/documents',
-      //   icon: <FolderOutlined />,
-      //   label: 'Управление документами',
-      // });
-      items.push({
+        roles: ['admin', 'staff', 'employee'],
+      },
+      {
         key: '/import',
         icon: <UploadOutlined />,
         label: 'Импорт из Excel',
-      });
-      items.push({
-        key: '/import',
-        icon: <ImportOutlined />,
-        label: 'Импорт из Excel',
-      });
-    }
-
-    if (role === 'admin') {
-      items.push({
+        roles: ['admin', 'staff', 'employee'],
+      },
+      {
         key: '/audit',
         icon: <AuditOutlined />,
         label: 'Аудит событий',
-      });
-    }
+        roles: ['admin'],
+      },
+    ];
 
-    return items;
+    const currentRole = role || 'user';
+    return allItems.filter(item => item.roles.includes(currentRole));
   }, [role]);
 
   return (

@@ -32,20 +32,26 @@ export const AuthProvider = ({ children }) => {
       setUser(parsed);
       backendClient.get('/auth/me').then(meRes => {
         const me = meRes.data;
+        console.log('DEBUG [auth/me response]:', me);
         const freshUser = {
           login: me.username || me.login || parsed.login,
-          role: me.role || me.authorities?.[0]?.authority?.replace('ROLE_', '')?.toLowerCase() || parsed.role,
+          role: (me.role || me.authorities?.[0]?.authority || parsed.role)?.replace('ROLE_', '')?.toLowerCase(),
           name: me.name || me.username || parsed.name,
           id: me.id || parsed.id,
           organizationId: me.organizationId || parsed.organizationId,
           organizationName: me.organizationName || parsed.organizationName,
         };
+        console.log('DEBUG [freshUser.role]:', freshUser.role);
         setUser(freshUser);
         localStorage.setItem('agro_user', JSON.stringify(freshUser));
-      }).catch(() => {
-        localStorage.removeItem('agro_user');
-        localStorage.removeItem('token');
-        setUser(null);
+      }).catch((err) => {
+        console.error('DEBUG [auth/me error]:', err);
+        // Only clear the session if the server explicitly tells us the token is invalid/expired (401/403)
+        if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+          localStorage.removeItem('agro_user');
+          localStorage.removeItem('token');
+          setUser(null);
+        }
       });
     } else {
       localStorage.removeItem('agro_user');
