@@ -16,12 +16,38 @@ import { marketAnalysisApi } from '../api/marketAnalysis';
 
 const { Title, Text, Paragraph } = Typography;
 
+// Deduplication and normalization helper for company names
+const normalizeId = (name) => {
+  if (!name) return '';
+  let id = name.trim().toUpperCase();
+  // Replace Latin characters that are identical/similar in meaning/usage
+  id = id.replace(/\bTOO\b/g, 'ТОО');
+  id = id.replace(/\bIP\b/g, 'ИП');
+  id = id.replace(/\bKX\b/g, 'КХ');
+  // Remove all quotes (single, double, guillemets, typography quotes)
+  id = id.replace(/["'«»“”]/g, '');
+  // Normalize whitespaces
+  id = id.replace(/\s+/g, ' ');
+  return id;
+};
+
+// Check if a new label is more readable/better formatted than current
+const isBetterLabel = (currentLabel, newLabel) => {
+  if (!currentLabel) return true;
+  if (!newLabel) return false;
+  const currentIsUpper = currentLabel === currentLabel.toUpperCase();
+  const newIsUpper = newLabel === newLabel.toUpperCase();
+  // We prefer mixed-case over all-uppercase
+  if (currentIsUpper && !newIsUpper) return true;
+  return false;
+};
+
 // ─── SVG-based interactive Node Graph component for Supply Chain ───
 const SvgNodeGraph = ({ data, showLabelsConstantly }) => {
   const [hoveredEdge, setHoveredEdge] = useState(null);
   const [hoveredNode, setHoveredNode] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [groupSmallBuyers, setGroupSmallBuyers] = useState(true);
+  const [groupSmallBuyers, setGroupSmallBuyers] = useState(false);
 
   // Helper to format organization names beautifully
   const formatDisplayName = (name) => {
@@ -34,20 +60,21 @@ const SvgNodeGraph = ({ data, showLabelsConstantly }) => {
 
   // 1. Identify leaf buyers and their volumes to filter small ones
   const buyerVolumes = {};
-  const sellersSet = new Set(data.map(item => item.sellerName));
+  const sellersSet = new Set(data.map(item => normalizeId(item.sellerName)));
   
   data.forEach(item => {
     if (item.buyerName) {
-      buyerVolumes[item.buyerName] = (buyerVolumes[item.buyerName] || 0) + (item.quantity || 0);
+      const buyerId = normalizeId(item.buyerName);
+      buyerVolumes[buyerId] = (buyerVolumes[buyerId] || 0) + (item.quantity || 0);
     }
   });
 
   const smallBuyers = new Set();
   if (groupSmallBuyers) {
-    Object.entries(buyerVolumes).forEach(([buyer, vol]) => {
+    Object.entries(buyerVolumes).forEach(([buyerId, vol]) => {
       // If they only buy (never sell) and total volume is less than 50 tons
-      if (!sellersSet.has(buyer) && vol < 50) {
-        smallBuyers.add(buyer);
+      if (!sellersSet.has(buyerId) && vol < 50) {
+        smallBuyers.add(buyerId);
       }
     });
   }
@@ -58,58 +85,74 @@ const SvgNodeGraph = ({ data, showLabelsConstantly }) => {
   const virtualGroupInfo = new Map(); // virtualNodeName -> Map of originalCompany -> volume
 
   data.forEach((item) => {
-    const seller = item.sellerName;
-    let buyer = item.buyerName;
+    const rawSeller = item.sellerName;
+    const rawBuyer = item.buyerName;
+    
+    const sellerId = normalizeId(rawSeller);
+    let buyerId = normalizeId(rawBuyer);
 
     // Group small leaf buyers into virtual nodes per seller
-    const isSmallBuyer = smallBuyers.has(buyer);
+    const isSmallBuyer = smallBuyers.has(buyerId);
     if (groupSmallBuyers && isSmallBuyer) {
-      const virtualName = `Прочие покупатели (${seller})`;
-      buyer = virtualName;
+      const virtualId = `PROCHIE_BUYERS_${sellerId}`;
+      buyerId = virtualId;
 
-      if (!virtualGroupInfo.has(virtualName)) {
-        virtualGroupInfo.set(virtualName, new Map());
+      if (!virtualGroupInfo.has(virtualId)) {
+        virtualGroupInfo.set(virtualId, new Map());
       }
-      const compMap = virtualGroupInfo.get(virtualName);
-      compMap.set(item.buyerName, (compMap.get(item.buyerName) || 0) + (item.quantity || 0));
+      const compMap = virtualGroupInfo.get(virtualId);
+      compMap.set(rawBuyer, (compMap.get(rawBuyer) || 0) + (item.quantity || 0));
     }
 
     // Add seller node
-    const isImport = seller && seller.startsWith("Импорт");
-    if (!nodesMap.has(seller)) {
-      nodesMap.set(seller, {
-        id: seller,
-        label: seller,
+    const isImport = rawSeller && rawSeller.startsWith("Импорт");
+    if (!nodesMap.has(sellerId)) {
+      nodesMap.set(sellerId, {
+        id: sellerId,
+        label: rawSeller,
         level: item.hopIndex,
         isImport: isImport,
         isGroupNode: false
       });
+    } else {
+      const existingNode = nodesMap.get(sellerId);
+      if (isBetterLabel(existingNode.label, rawSeller)) {
+        existingNode.label = rawSeller;
+      }
+      if (existingNode.level > item.hopIndex) {
+        existingNode.level = item.hopIndex;
+      }
     }
 
     // Add buyer node
-    if (!nodesMap.has(buyer)) {
-      const isVirtual = buyer.startsWith("Прочие покупатели (");
-      nodesMap.set(buyer, {
-        id: buyer,
-        label: isVirtual ? "Прочие покупатели" : buyer,
+    if (!nodesMap.has(buyerId)) {
+      const isVirtual = buyerId.startsWith("PROCHIE_BUYERS_");
+      nodesMap.set(buyerId, {
+        id: buyerId,
+        label: isVirtual ? "Прочие покупатели" : rawBuyer,
         level: item.hopIndex + 1,
         isImport: false,
         isGroupNode: isVirtual
       });
     } else {
-      const buyerNode = nodesMap.get(buyer);
+      const buyerNode = nodesMap.get(buyerId);
       if (buyerNode.level < item.hopIndex + 1) {
         buyerNode.level = item.hopIndex + 1;
       }
+      const isVirtual = buyerId.startsWith("PROCHIE_BUYERS_");
+      if (!isVirtual && isBetterLabel(buyerNode.label, rawBuyer)) {
+        buyerNode.label = rawBuyer;
+      }
     }
 
-    const edgeKey = `${seller} -> ${buyer}`;
+    const edgeKey = `${sellerId} -> ${buyerId}`;
     if (!groupedEdgesMap.has(edgeKey)) {
       groupedEdgesMap.set(edgeKey, []);
     }
     groupedEdgesMap.get(edgeKey).push({
       ...item,
-      buyerName: buyer
+      sellerName: sellerId,
+      buyerName: buyerId
     });
   });
 
@@ -207,7 +250,7 @@ const SvgNodeGraph = ({ data, showLabelsConstantly }) => {
 
   const totalLevels = Math.max(1, Object.keys(levels).length);
   const svgWidth = Math.max(1200, totalLevels * 460);
-  const svgHeight = Math.max(600, maxNodesInColumn * 110);
+  const svgHeight = Math.max(600, maxNodesInColumn * (showLabelsConstantly ? 160 : 110));
 
   // Assign x, y positions to each node
   const nodePositions = {};
@@ -363,9 +406,11 @@ const SvgNodeGraph = ({ data, showLabelsConstantly }) => {
             const cp2x = startX + dx * 0.6;
             const pathD = `M ${startX} ${startY} C ${cp1x} ${startY}, ${cp2x} ${endY}, ${endX} ${endY}`;
 
+            const fromLabel = nodesMap.get(edge.from)?.label || '';
+            const toLabel = nodesMap.get(edge.to)?.label || '';
             const edgeMatchesSearch = !searchTerm || 
-              edge.from.toLowerCase().includes(searchTerm.toLowerCase()) || 
-              edge.to.toLowerCase().includes(searchTerm.toLowerCase());
+              fromLabel.toLowerCase().includes(searchTerm.toLowerCase()) || 
+              toLabel.toLowerCase().includes(searchTerm.toLowerCase());
             const isEdgeDimmed = !edgeMatchesSearch;
 
             return (
@@ -416,7 +461,7 @@ const SvgNodeGraph = ({ data, showLabelsConstantly }) => {
             
             // Adjust card height dynamically depending on if we display incoming transaction details
             const showDetails = hasIncoming && showLabelsConstantly;
-            const nodeHeight = showDetails ? 82 : 52;
+            const nodeHeight = showDetails ? 120 : 52;
 
             let fillGrad = "url(#standardNodeGrad)";
             if (node.isImport) fillGrad = "url(#importNodeGrad)";
@@ -476,7 +521,7 @@ const SvgNodeGraph = ({ data, showLabelsConstantly }) => {
                 </div>
                 <div style={{ fontSize: '11px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <div style={{ color: '#cbd5e1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    🏢 От кого: {formatDisplayName(incomingEdges[0]?.from)}
+                    🏢 От кого: {formatDisplayName(nodesMap.get(incomingEdges[0]?.from)?.label || incomingEdges[0]?.from)}
                   </div>
                   <div>Период: <span style={{ color: '#cbd5e1' }}>{incomingEdges[0]?.date || '—'}</span></div>
                   <div>Объем: <span style={{ color: '#ffffff', fontWeight: '600' }}>{totalQty.toLocaleString()} т/л</span></div>
@@ -549,14 +594,48 @@ const SvgNodeGraph = ({ data, showLabelsConstantly }) => {
                   {showDetails && (
                     <>
                       <line x1="0" y1="52" x2={nodeWidth} y2="52" stroke="#374151" strokeWidth="1" />
-                      <text x="12" y="70" fill="#cbd5e1" fontSize="9" textAnchor="start">
-                        {qtyStr}
+                      
+                      {/* От кого */}
+                      <text x="12" y="68" fill="#9ca3af" fontSize="8.5" textAnchor="start">
+                        От кого:
                       </text>
-                      <text x="92" y="70" fill="#38bdf8" fontSize="9" textAnchor="start" fontWeight="bold">
-                        {priceStr}
+                      <text x="60" y="68" fill="#cbd5e1" fontSize="8.5" fontWeight="bold" textAnchor="start">
+                        {incomingEdges[0]?.from ? (
+                          (() => {
+                            const label = nodesMap.get(incomingEdges[0].from)?.label || incomingEdges[0].from;
+                            const formatted = formatDisplayName(label);
+                            return formatted.length > 24 ? formatted.substring(0, 22) + '...' : formatted;
+                          })()
+                        ) : '—'}
                       </text>
+
+                      {/* Период */}
+                      <text x="12" y="82" fill="#9ca3af" fontSize="8.5" textAnchor="start">
+                        Период:
+                      </text>
+                      <text x="60" y="82" fill="#cbd5e1" fontSize="8.5" textAnchor="start">
+                        {incomingEdges[0]?.date || '—'}
+                      </text>
+
+                      {/* Объем */}
+                      <text x="12" y="96" fill="#9ca3af" fontSize="8.5" textAnchor="start">
+                        Объем:
+                      </text>
+                      <text x="60" y="96" fill="#ffffff" fontSize="8.5" fontWeight="bold" textAnchor="start">
+                        {totalQty.toLocaleString(undefined, { maximumFractionDigits: 1 })} т/л
+                      </text>
+
+                      {/* Цена */}
+                      <text x="12" y="110" fill="#9ca3af" fontSize="8.5" textAnchor="start">
+                        Цена:
+                      </text>
+                      <text x="60" y="110" fill="#38bdf8" fontSize="8.5" fontWeight="bold" textAnchor="start">
+                        {Math.round(avgPrice).toLocaleString()} ₸
+                      </text>
+
+                      {/* Наценка */}
                       {avgMarkup > 0 && (
-                        <text x="168" y="70" fill={avgMarkup > 30 ? "#ef4444" : (avgMarkup > 15 ? "#f59e0b" : "#10b981")} fontSize="9" textAnchor="start" fontWeight="bold">
+                        <text x="160" y="110" fill={avgMarkup > 30 ? "#ef4444" : (avgMarkup > 15 ? "#f59e0b" : "#10b981")} fontSize="8.5" fontWeight="bold" textAnchor="start">
                           {markupStr}
                         </text>
                       )}
@@ -583,7 +662,7 @@ const MarketAnalysis = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [supplyChainData, setSupplyChainData] = useState([]);
   const [chainLoading, setChainLoading] = useState(false);
-  const [showLabelsConstantly, setShowLabelsConstantly] = useState(false);
+  const [showLabelsConstantly, setShowLabelsConstantly] = useState(true);
 
   const loadData = async () => {
     setLoading(true);
@@ -1003,7 +1082,7 @@ const MarketAnalysis = () => {
                 <Col span={8}>
                   <Statistic
                     title={<Text style={{ fontSize: 12 }} type="secondary">Участников (компаний)</Text>}
-                    value={new Set(supplyChainData.flatMap(n => [n.sellerName, n.buyerName])).size}
+                    value={new Set(supplyChainData.flatMap(n => [n.sellerName, n.buyerName]).map(normalizeId)).size}
                     valueStyle={{ fontSize: 20, color: '#1890ff', fontWeight: 'bold' }}
                     suffix="фирм"
                   />

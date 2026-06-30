@@ -18,6 +18,7 @@ const Import = lazy(() => import('../pages/Import'));
 const MarketAnalysis = lazy(() => import('../pages/MarketAnalysis'));
 const LivestockTracking = lazy(() => import('../pages/LivestockTracking'));
 const Subsidies = lazy(() => import('../pages/Subsidies'));
+const ContractorsAndEsf = lazy(() => import('../pages/ContractorsAndEsf'));
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { role, loading } = useAuth();
@@ -63,6 +64,8 @@ const AppRouter = () => {
           <Route path="market-analysis" element={<MarketAnalysis />} />
           <Route path="calculator" element={<Calculator />} />
           <Route path="references" element={<References />} />
+          <Route path="organizations" element={<ContractorsAndEsf />} />
+          <Route path="esf-records" element={<ContractorsAndEsf />} />
           <Route path="documents" element={<Documents />} />
           <Route path="reporting" element={<Reporting />} />
           <Route path="subsidies" element={<Subsidies />} />

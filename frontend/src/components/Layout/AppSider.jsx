@@ -16,6 +16,8 @@ import {
   DollarOutlined,
   DatabaseOutlined,
   ImportOutlined,
+  TeamOutlined,
+  PartitionOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../context/AuthContext';
 
@@ -63,6 +65,18 @@ const AppSider = () => {
         key: '/references',
         icon: <BookOutlined />,
         label: 'Справочники',
+        roles: ['admin', 'staff', 'employee', 'user'],
+      },
+      {
+        key: '/organizations',
+        icon: <TeamOutlined />,
+        label: 'Реестр контрагентов',
+        roles: ['admin', 'staff', 'employee', 'user'],
+      },
+      {
+        key: '/esf-records',
+        icon: <PartitionOutlined />,
+        label: 'Записи ЭСФ',
         roles: ['admin', 'staff', 'employee', 'user'],
       },
       {
